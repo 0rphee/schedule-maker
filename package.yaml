@@ -22,6 +22,10 @@ description:         Please see the README on GitHub at <https://github.com/0rph
 dependencies:
 - base >= 4.7 && < 5
 - text
+- brick
+- microlens
+- microlens-th
+- vty
 
 ghc-options:
 - -Wall
@@ -33,6 +37,9 @@ ghc-options:
 - -Wmissing-home-modules
 - -Wpartial-fields
 - -Wredundant-constraints
+
+default-extensions:
+- OverloadedStrings
 
 library:
   source-dirs: src

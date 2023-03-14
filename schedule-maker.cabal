@@ -26,14 +26,21 @@ source-repository head
 library
   exposed-modules:
       Lib
+      UI
   other-modules:
       Paths_schedule_maker
   hs-source-dirs:
       src
+  default-extensions:
+      OverloadedStrings
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
+    , brick
+    , microlens
+    , microlens-th
     , text
+    , vty
   default-language: Haskell2010
 
 executable schedule-maker-exe
@@ -42,11 +49,17 @@ executable schedule-maker-exe
       Paths_schedule_maker
   hs-source-dirs:
       app
+  default-extensions:
+      OverloadedStrings
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , brick
+    , microlens
+    , microlens-th
     , schedule-maker
     , text
+    , vty
   default-language: Haskell2010
 
 test-suite schedule-maker-test
@@ -56,9 +69,15 @@ test-suite schedule-maker-test
       Paths_schedule_maker
   hs-source-dirs:
       test
+  default-extensions:
+      OverloadedStrings
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , brick
+    , microlens
+    , microlens-th
     , schedule-maker
     , text
+    , vty
   default-language: Haskell2010
