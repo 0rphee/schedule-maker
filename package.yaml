@@ -22,10 +22,15 @@ description:         Please see the README on GitHub at <https://github.com/0rph
 dependencies:
 - base >= 4.7 && < 5
 - text
-- brick
-- microlens
-- microlens-th
-- vty
+- yaml
+- aeson
+- vector
+- combinatorial
+# - brick
+# - microlens
+# - microlens-th
+# - vty
+# - transformers
 
 ghc-options:
 - -Wall
