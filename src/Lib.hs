@@ -1,11 +1,14 @@
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Lib (someFunc) where
 
-import qualified Data.Vector as V
-import qualified Data.Text as T
+import Data.Vector (Vector, toList) 
+import Data.Text qualified  as T
+import Data.Map qualified  as M
 import Data.Yaml
     ( (.:),
       decodeFileEither,
@@ -14,10 +17,11 @@ import Data.Yaml
       ParseException, prettyPrintParseException )
 import Data.Aeson.Types
     ( typeMismatch, parseFail, prependFailure)
+import Combinatorics (tuples)
 
 someFunc :: IO ()
 someFunc = do
-  (res :: Either ParseException [Subject]) <- decodeFileEither "test.yaml"
+  (res :: Either ParseException [(T.Text, Subject)]) <- decodeFileEither "test.yaml"
   case res of
     Left err   -> putStrLn $ prettyPrintParseException err
     Right result -> print result
@@ -115,18 +119,33 @@ data Subject
    = MkSubject
      {
        subjName      :: T.Text
-     , subjID        :: T.Text
      , subjProfessor :: T.Text
      , subjClasses   :: [Class]
      }
 instance Show Subject where
-  show (MkSubject sname sid sprof sclasses) = "( Sname: " <> show sname 
-                                           <> ", Sid: " <> show sid 
+  show (MkSubject sname {-sid-} sprof sclasses) = "( Sname: " <> show sname 
+                                           -- <> ", Sid: " <> show sid 
                                            <> ", Sprof: " <> show sprof 
                                            <> ", Sclasses: " <> show sclasses 
                                            <> ")"
 
+data SubjErrorInfo 
+  = SubjInfo 
+    {
+      conflictingSubjName      :: T.Text
+    , conflictingSubjID        :: T.Text
+    , conflictingSubjProfessor :: T.Text
+    , conflictingSubjClass     :: Class
+    }
 
+subjectMap :: M.Map T.Text Subject
+subjectMap = M.empty
+
+-- newtype Error 
+--   = OverlappingClasses 
+--     {
+--       overlappingSubjects :: (SubjectErrorInfo, SubjectErrorInfo)
+--     }
 
 createInterval :: Time -> Time -> Maybe Interval
 createInterval x y = if x < y
@@ -152,25 +171,34 @@ clasesOverlap class1 class2
       (SaturdayClass inter1, SaturdayClass inter2)   -> intervalsOverlap inter1 inter2
       _                                              -> False
       
-validateIntervals :: [Interval] -> Maybe [Interval]
-validateIntervals ls = go ls []
-  where go :: [Interval] -> [Interval] -> Maybe [Interval]
-        go rest [] = case rest of
-                       []     -> Nothing
-                       (x:xs) -> go xs [x]
-        go [] accuml = Just accuml
-        go (x:xs) (itemToValidate:validatedItems)
-          = case traverse (intervalsOverlap itemToValidate) (x:xs) of
-              Nothing -> Nothing
-              _       -> go xs (x:itemToValidate:validatedItems)
 
--- assumes, the day of the class is validated beforehand
-validateDay :: [Class] -> Maybe [Class]
-validateDay classes = do
-  let intervals = fmap classInterval classes 
-  case validateIntervals intervals of
-    Just _ -> pure classes
-    _      -> Nothing
+
+validateClasses :: [Class] -> Either (Class, Class) [Class]
+validateClasses xs = traverse undefined undefined
+  where combinations = toTup <$> tuples 2 xs
+        toTup (c1:c2:_) = (c1, c2)
+          
+
+
+-- validateIntervals :: [Interval] -> Maybe [Interval]
+-- validateIntervals ls = go ls []
+--   where go :: [Interval] -> [Interval] -> Maybe [Interval]
+--         go rest [] = case rest of
+--                        []     -> Nothing
+--                        (x:xs) -> go xs [x]
+--         go [] accuml = Just accuml
+--         go (x:xs) (itemToValidate:validatedItems)
+--           = case traverse (intervalsOverlap itemToValidate) (x:xs) of
+--               Nothing -> Nothing
+--               _       -> go xs (x:itemToValidate:validatedItems)
+
+-- -- assumes, the day of the class is validated beforehand
+-- validateDay :: [Class] -> Maybe [Class]
+-- validateDay classes = do
+--   let intervals = fmap classInterval classes 
+--   case validateIntervals intervals of
+--     Just _ -> pure classes
+--     _      -> Nothing
 
 type ClassColl = ([Class], [Class], [Class], [Class], [Class], [Class], [Class]) 
 
@@ -263,13 +291,13 @@ instance FromJSON Class where
         prependFailure "parsing Interval failed, "
             (typeMismatch "Object" invalid) 
 
-  parseJSONList (Array (arr :: V.Vector Value)) 
-    = V.toList <$> traverse parseJSON arr
+  parseJSONList (Array (arr :: Vector Value)) 
+    = toList <$> traverse parseJSON arr
   parseJSONList invalid =
         prependFailure "parsing Interval failed, "
             (typeMismatch "Array" invalid) 
 
-instance FromJSON Subject where
+instance  {-# OVERLAPPING #-} FromJSON (T.Text, Subject) where
   parseJSON (Object obj) = prependFailure "parsing Subject failed, " $ do
     name      <- obj .: "nombre"
     let errorInClassName = "in class '" <> T.unpack name <> "', "
@@ -280,14 +308,14 @@ instance FromJSON Subject where
     let errorInClassProfessor = errorInClassId 
                               <> ("with Professor: '" <> T.unpack professor <> "', ")
     classes   <- prependFailure errorInClassProfessor   $ obj .: "dias"
-    pure $ MkSubject name classId professor classes
+    pure (classId, MkSubject name professor classes)
 
     
   parseJSON invalid =
         prependFailure "parsing Interval failed, "
             (typeMismatch "Object" invalid) 
-  parseJSONList (Array (arr :: V.Vector Value)) 
-    = V.toList <$> traverse parseJSON arr
+  parseJSONList (Array (arr :: Vector Value)) 
+    = toList <$> traverse parseJSON arr
   parseJSONList invalid =
         prependFailure "parsing Subjects failed, "
             (typeMismatch "Array" invalid) 
