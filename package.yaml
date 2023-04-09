@@ -26,6 +26,7 @@ dependencies:
 - aeson
 - vector
 - combinatorial
+- containers
 # - brick
 # - microlens
 # - microlens-th
