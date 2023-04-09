@@ -1,0 +1,13 @@
+- nombre: POO
+  id-clase: "1234"
+  profesor: bernabe
+  dias:
+    - lunes: 
+          inicio: 11:30
+          final: 11:30
+    - martes: 
+          inicio: 11:30
+          final: 11:30
+    - miercoles: 
+          inicio: 11:30
+          final: 11:30
