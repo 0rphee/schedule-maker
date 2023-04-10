@@ -28,8 +28,12 @@ someFunc = do
 runValidation :: (M.Map T.Text Subject, [Class]) -> Either Error String -- TODO: fix 
 runValidation (valMap, classes) 
   = case validateClasses classes of
-      Just err -> Left err
-      Nothing  -> Right "Yay"
+      Nothing  -> Right "Everything alright!"  -- TODO: improve later
+      Just err -> case err of
+                   OverlappingClasses c1 c2 -> 
+                    let (id1, id2) = (classSubjId c1, classSubjId c2)
+                     in Left $ RichOverlappingClasses (valMap M.! id1, c1) (valMap M.! id2, c2) -- using the non-total function because the subject is sure to be found.
+                   _ -> error "This should never happen"
 
 convertValues :: [(T.Text, Subject, [Class])] -> Either Error (M.Map T.Text Subject, [Class])
 convertValues values = go values (Right (M.empty, []))
@@ -146,6 +150,7 @@ subjectMap = M.empty
 
 data Error 
   = OverlappingClasses Class Class 
+  | RichOverlappingClasses (Subject, Class) (Subject, Class)
   | RepeatedSubjId T.Text Subject Subject
   deriving Show
 
