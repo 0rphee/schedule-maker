@@ -39,7 +39,7 @@ convertValues values = go values (Right (M.empty, []))
           = do
           (valMap, classList) <- res
           case M.lookup id' valMap of
-            Just val -> Left $ RepeatedSubjId id' subj val
+            Just repeatedSubj -> Left $ RepeatedSubjId id' subj repeatedSubj
             Nothing -> go xs (Right (M.insert id' subj valMap, cls <> classList))
         
 data Class
