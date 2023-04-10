@@ -6,7 +6,6 @@
 
 module Lib (someFunc) where
 
-import Data.Vector (Vector, toList) 
 import Data.Text qualified  as T
 import Data.Map qualified  as M
 import Data.Yaml
@@ -27,24 +26,24 @@ someFunc = do
     Right result -> print result
 
 data Class
-  = MondayClass    {classInterval :: Interval}
-  | TuesdayClass   {classInterval :: Interval}
-  | WednesdayClass {classInterval :: Interval}
-  | ThursdayClass  {classInterval :: Interval}
-  | FridayClass    {classInterval :: Interval}
-  | SaturdayClass  {classInterval :: Interval}
-  | SundayClass    {classInterval :: Interval}
+  = MondayClass    {classSubjId :: T.Text, classInterval :: Interval}
+  | TuesdayClass   {classSubjId :: T.Text, classInterval :: Interval}
+  | WednesdayClass {classSubjId :: T.Text, classInterval :: Interval}
+  | ThursdayClass  {classSubjId :: T.Text, classInterval :: Interval}
+  | FridayClass    {classSubjId :: T.Text, classInterval :: Interval}
+  | SaturdayClass  {classSubjId :: T.Text, classInterval :: Interval}
+  | SundayClass    {classSubjId :: T.Text, classInterval :: Interval}
 
 instance Show Class where
   show x 
     = case x of
-        MondayClass    inter -> "Monday: " <> show inter
-        TuesdayClass   inter -> "Monday: " <> show inter
-        WednesdayClass inter -> "Monday: " <> show inter
-        ThursdayClass  inter -> "Monday: " <> show inter
-        FridayClass    inter -> "Monday: " <> show inter
-        SaturdayClass  inter -> "Monday: " <> show inter
-        SundayClass    inter -> "Monday: " <> show inter
+        MondayClass    _ inter -> "Monday: " <> show inter
+        TuesdayClass   _ inter -> "Monday: " <> show inter
+        WednesdayClass _ inter -> "Monday: " <> show inter
+        ThursdayClass  _ inter -> "Monday: " <> show inter
+        FridayClass    _ inter -> "Monday: " <> show inter
+        SaturdayClass  _ inter -> "Monday: " <> show inter
+        SundayClass    _ inter -> "Monday: " <> show inter
       
 
 data Hour
@@ -120,23 +119,10 @@ data Subject
      {
        subjName      :: T.Text
      , subjProfessor :: T.Text
-     , subjClasses   :: [Class]
      }
 instance Show Subject where
-  show (MkSubject sname {-sid-} sprof sclasses) = "( Sname: " <> show sname 
-                                           -- <> ", Sid: " <> show sid 
-                                           <> ", Sprof: " <> show sprof 
-                                           <> ", Sclasses: " <> show sclasses 
-                                           <> ")"
-
-data SubjErrorInfo 
-  = SubjInfo 
-    {
-      conflictingSubjName      :: T.Text
-    , conflictingSubjID        :: T.Text
-    , conflictingSubjProfessor :: T.Text
-    , conflictingSubjClass     :: Class
-    }
+  show (MkSubject sname sprof) = "{ Subject name: " <> show sname 
+                              <> ", Subject professor: " <> show sprof  <> " }"
 
 subjectMap :: M.Map T.Text Subject
 subjectMap = M.empty
@@ -159,23 +145,28 @@ intervalsOverlap (MkInterval a b) (MkInterval x y)
   | x <= b && b <= y = True
   | otherwise        = False
 
-clasesOverlap :: Class -> Class -> Bool
-clasesOverlap class1 class2 
+classesOverlap :: Class -> Class -> Bool
+classesOverlap class1 class2 
   = case (class1, class2) of
-      (MondayClass inter1, MondayClass inter2)       -> intervalsOverlap inter1 inter2
-      (TuesdayClass inter1, TuesdayClass inter2)     -> intervalsOverlap inter1 inter2
-      (WednesdayClass inter1, WednesdayClass inter2) -> intervalsOverlap inter1 inter2
-      (ThursdayClass inter1, ThursdayClass inter2)   -> intervalsOverlap inter1 inter2
-      (FridayClass inter1, FridayClass inter2)       -> intervalsOverlap inter1 inter2
-      (SaturdayClass inter1, SaturdayClass inter2)   -> intervalsOverlap inter1 inter2
+      (MondayClass _ inter1, MondayClass _ inter2)       -> intervalsOverlap inter1 inter2
+      (TuesdayClass _ inter1, TuesdayClass _ inter2)     -> intervalsOverlap inter1 inter2
+      (WednesdayClass _ inter1, WednesdayClass _ inter2) -> intervalsOverlap inter1 inter2
+      (ThursdayClass _ inter1, ThursdayClass _ inter2)   -> intervalsOverlap inter1 inter2
+      (FridayClass _ inter1, FridayClass _ inter2)       -> intervalsOverlap inter1 inter2
+      (SaturdayClass _ inter1, SaturdayClass _ inter2)   -> intervalsOverlap inter1 inter2
       _                                              -> False
       
 
-
-validateClasses :: [Class] -> Either (Class, Class) [Class]
-validateClasses xs = traverse undefined undefined
-  where combinations = toTup <$> tuples 2 xs
+validateClasses :: [Class] -> Maybe Error
+validateClasses allClasses = foldl f Nothing combinations
+  where combinations = toTup <$> tuples 2 allClasses
         toTup (c1:c2:_) = (c1, c2)
+        f :: Maybe Error-> (Class, Class) -> Maybe Error
+        f Nothing (c1, c2)= if classesOverlap c1 c2
+                            then Just $ OverlappingClasses c1 c2
+                            else Nothing
+        f err _ = err
+
           
 
 
@@ -198,7 +189,6 @@ validateClasses xs = traverse undefined undefined
 --   case validateIntervals intervals of
 --     Just _ -> pure classes
 --     _      -> Nothing
-
 
 instance FromJSON Time where
   parseJSON (String str) 
@@ -256,23 +246,23 @@ instance FromJSON Interval where
         prependFailure "parsing Interval failed, "
             (typeMismatch "Object" invalid) 
 
-instance FromJSON Class where
+instance {-# OVERLAPPING #-} FromJSON (T.Text -> Class) where
   parseJSON (Object obj) = prependFailure "parsing Class failed, " $ do
     day      <- obj .: "dia" 
     interval <- prependFailure ("in day '" <> T.unpack day <> "', ") $ parseJSON (Object obj)
     case day of
-      "lunes"     -> pure $ MondayClass interval
-      "martes"    -> pure $ TuesdayClass interval
-      "miercoles" -> pure $ WednesdayClass interval
-      "jueves"    -> pure $ ThursdayClass interval
-      "viernes"   -> pure $ FridayClass interval
+      "lunes"     -> pure $ \sid -> MondayClass sid interval
+      "martes"    -> pure $ \sid -> TuesdayClass sid interval
+      "miercoles" -> pure $ \sid -> WednesdayClass sid interval
+      "jueves"    -> pure $ \sid -> ThursdayClass sid interval
+      "viernes"   -> pure $ \sid -> FridayClass sid interval
       _           -> parseFail $ "Invalid Class day: " <> T.unpack day
   parseJSON invalid =
         prependFailure "parsing Interval failed, "
             (typeMismatch "Object" invalid) 
 
 
-instance  {-# OVERLAPPING #-} FromJSON (T.Text, Subject) where
+instance  {-# OVERLAPPING #-} FromJSON (T.Text, Subject, [Class]) where
   parseJSON (Object obj) = prependFailure "parsing Subject failed, " $ do
     name      <- obj .: "nombre"
     let errorInClassName = "in class '" <> T.unpack name <> "', "
@@ -282,8 +272,10 @@ instance  {-# OVERLAPPING #-} FromJSON (T.Text, Subject) where
     professor <- prependFailure errorInClassId $ obj .: "profesor"
     let errorInClassProfessor = errorInClassId 
                               <> ("with Professor: '" <> T.unpack professor <> "', ")
-    classes   <- prependFailure errorInClassProfessor   $ obj .: "dias"
-    pure (classId, MkSubject name professor classes)
+    (classes' :: [T.Text -> Class]) <- prependFailure errorInClassProfessor $ obj .: "dias"
+    let classes = fmap (\f -> f classId) classes'
+    
+    pure (classId, MkSubject name professor, classes)
 
     
   parseJSON invalid =
