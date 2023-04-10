@@ -199,25 +199,6 @@ validateClasses xs = traverse undefined undefined
 --     Just _ -> pure classes
 --     _      -> Nothing
 
-type ClassColl = ([Class], [Class], [Class], [Class], [Class], [Class], [Class]) 
-
--- c = MkInterval ( MkTime H10 ZeroMinutes ) (MkTime H11 HalfAnHour)
--- d = MkInterval ( MkTime H10 HalfAnHour ) (MkTime H12 ZeroMinutes)
-
--- firstI = MkInterval (MkTime H10 ZeroMinutes) (MkTime H12 HalfAnHour)
--- sedonI = MkInterval (MkTime H0 HalfAnHour)  (MkTime H2 ZeroMinutes)
-
--- t1 = MkInterval (MkTime H12 HalfAnHour)  (MkTime H13 ZeroMinutes)
--- t2 = MkInterval (MkTime H15 ZeroMinutes) (MkTime H16 HalfAnHour)
--- t3 = MkInterval (MkTime H16 HalfAnHour)  (MkTime H17 ZeroMinutes)
--- t4 = MkInterval (MkTime H18 ZeroMinutes) (MkTime H18 HalfAnHour)
--- t5 = MkInterval (MkTime H11 HalfAnHour)  (MkTime H12 ZeroMinutes)
-
--- c1 = TuesdayClass firstI 
--- c2 = TuesdayClass sedonI
--- c3 = TuesdayClass c
--- c4 = TuesdayClass d
-
 
 instance FromJSON Time where
   parseJSON (String str) 
