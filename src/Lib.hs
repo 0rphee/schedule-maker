@@ -20,11 +20,28 @@ import Combinatorics (tuples)
 
 someFunc :: IO ()
 someFunc = do
-  (res :: Either ParseException [(T.Text, Subject)]) <- decodeFileEither "test.yaml"
+  (res :: Either ParseException [(T.Text, Subject, [Class])]) <- decodeFileEither "test.yaml"
   case res of
-    Left err   -> putStrLn $ prettyPrintParseException err
-    Right result -> print result
+    Left err     -> putStrLn $ prettyPrintParseException err
+    Right result -> print $ convertValues result >>= runValidation
 
+runValidation :: (M.Map T.Text Subject, [Class]) -> Either Error String -- TODO: fix 
+runValidation (valMap, classes) 
+  = case validateClasses classes of
+      Just err -> Left err
+      Nothing  -> Right "Yay"
+
+convertValues :: [(T.Text, Subject, [Class])] -> Either Error (M.Map T.Text Subject, [Class])
+convertValues values = go values (Right (M.empty, []))
+  where go :: [(T.Text, Subject, [Class])] -> Either Error (M.Map T.Text Subject, [Class]) -> Either Error (M.Map T.Text Subject, [Class])
+        go [] result = result
+        go ((id', subj, cls):xs) res
+          = do
+          (valMap, classList) <- res
+          case M.lookup id' valMap of
+            Just val -> Left $ RepeatedSubjId id' subj val
+            Nothing -> go xs (Right (M.insert id' subj valMap, cls <> classList))
+        
 data Class
   = MondayClass    {classSubjId :: T.Text, classInterval :: Interval}
   | TuesdayClass   {classSubjId :: T.Text, classInterval :: Interval}
