@@ -33,7 +33,7 @@ runValidation (valMap, classes)
                    OverlappingClasses c1 c2 -> 
                     let (id1, id2) = (classSubjId c1, classSubjId c2)
                      in Left $ RichOverlappingClasses (valMap M.! id1, c1) (valMap M.! id2, c2) -- using the non-total function because the subject is sure to be found.
-                   _ -> error "This should never happen"
+                   _ -> error "This should never happen (class id not found in Map of subjects)"
 
 convertValues :: [(T.Text, Subject, [Class])] -> Either Error (M.Map T.Text Subject, [Class])
 convertValues values = go values (Right (M.empty, []))
@@ -182,7 +182,10 @@ classesOverlap class1 class2
 validateClasses :: [Class] -> Maybe Error
 validateClasses allClasses = foldl f Nothing combinations
   where combinations = toTup <$> tuples 2 allClasses
-        toTup (c1:c2:_) = (c1, c2)
+        toTup xs 
+          = case xs of 
+              (c1:c2:_) -> (c1, c2)
+              _ -> error "This should never happen (list of more than 2 elements for combinations)"
         f :: Maybe Error-> (Class, Class) -> Maybe Error
         f Nothing (c1, c2)= if classesOverlap c1 c2
                             then Just $ OverlappingClasses c1 c2
