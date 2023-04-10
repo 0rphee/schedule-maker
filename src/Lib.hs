@@ -141,11 +141,10 @@ data SubjErrorInfo
 subjectMap :: M.Map T.Text Subject
 subjectMap = M.empty
 
--- newtype Error 
---   = OverlappingClasses 
---     {
---       overlappingSubjects :: (SubjectErrorInfo, SubjectErrorInfo)
---     }
+data Error 
+  = OverlappingClasses Class Class 
+  | RepeatedSubjId T.Text Subject Subject
+  deriving Show
 
 createInterval :: Time -> Time -> Maybe Interval
 createInterval x y = if x < y
