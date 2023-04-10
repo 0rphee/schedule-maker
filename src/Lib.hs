@@ -290,11 +290,6 @@ instance FromJSON Class where
         prependFailure "parsing Interval failed, "
             (typeMismatch "Object" invalid) 
 
-  parseJSONList (Array (arr :: Vector Value)) 
-    = toList <$> traverse parseJSON arr
-  parseJSONList invalid =
-        prependFailure "parsing Interval failed, "
-            (typeMismatch "Array" invalid) 
 
 instance  {-# OVERLAPPING #-} FromJSON (T.Text, Subject) where
   parseJSON (Object obj) = prependFailure "parsing Subject failed, " $ do
