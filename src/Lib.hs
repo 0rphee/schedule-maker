@@ -219,19 +219,19 @@ instance FromJSON Time where
                       "08" -> pure H8
                       "09" -> pure H9
                       "10" -> pure H10
-                      "11" -> pure H1
-                      "12" -> pure H2
-                      "13" -> pure H3
-                      "14" -> pure H4
-                      "15" -> pure H5
-                      "16" -> pure H6
-                      "17" -> pure H7
-                      "18" -> pure H8
-                      "19" -> pure H9
-                      "20" -> pure H10
-                      "21" -> pure H1
-                      "22" -> pure H2
-                      "23" -> pure H3
+                      "11" -> pure H11
+                      "12" -> pure H12
+                      "13" -> pure H13
+                      "14" -> pure H14
+                      "15" -> pure H15
+                      "16" -> pure H16
+                      "17" -> pure H17
+                      "18" -> pure H18
+                      "19" -> pure H19
+                      "20" -> pure H20
+                      "21" -> pure H21
+                      "22" -> pure H22
+                      "23" -> pure H23
                       _    -> parseFail $ "Invalid hour: " <> T.unpack head'
           t tail' = case tail' of
                       "00" -> pure ZeroMinutes
