@@ -38,6 +38,7 @@ library
     , base >=4.7 && <5
     , combinatorial
     , containers
+    , prettyprinter
     , text
     , vector
     , yaml
@@ -57,6 +58,7 @@ executable schedule-maker-exe
     , base >=4.7 && <5
     , combinatorial
     , containers
+    , prettyprinter
     , schedule-maker
     , text
     , vector
@@ -78,6 +80,7 @@ test-suite schedule-maker-test
     , base >=4.7 && <5
     , combinatorial
     , containers
+    , prettyprinter
     , schedule-maker
     , text
     , vector

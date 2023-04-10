@@ -27,6 +27,7 @@ dependencies:
 - vector
 - combinatorial
 - containers
+- prettyprinter
 # - brick
 # - microlens
 # - microlens-th
