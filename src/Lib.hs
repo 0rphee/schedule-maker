@@ -1,22 +1,18 @@
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE ImportQualifiedPost #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Lib (someFunc) where
 
-import Data.Text qualified  as T
-import Data.Map qualified  as M
-import Data.Yaml
-    ( (.:),
-      decodeFileEither,
-      FromJSON(..),
-      Value(..),
-      ParseException, prettyPrintParseException )
-import Data.Aeson.Types
-    ( typeMismatch, parseFail, prependFailure)
-import Combinatorics (tuples)
+import Combinatorics    ( tuples )
+
+import Data.Aeson.Types ( parseFail, prependFailure, typeMismatch )
+import Data.Map         qualified as M
+import Data.Text        qualified as T
+import Data.Yaml        ( FromJSON (..), ParseException, Value (..),
+                          decodeFileEither, prettyPrintParseException, (.:) )
 
 someFunc :: IO ()
 someFunc = do
@@ -25,12 +21,12 @@ someFunc = do
     Left err     -> putStrLn $ prettyPrintParseException err
     Right result -> print $ convertValues result >>= runValidation
 
-runValidation :: (M.Map T.Text Subject, [Class]) -> Either Error String -- TODO: fix 
-runValidation (valMap, classes) 
+runValidation :: (M.Map T.Text Subject, [Class]) -> Either Error String -- TODO: fix
+runValidation (valMap, classes)
   = case validateClasses classes of
       Nothing  -> Right "Everything alright!"  -- TODO: improve later
       Just err -> case err of
-                   OverlappingClasses c1 c2 -> 
+                   OverlappingClasses c1 c2 ->
                     let (id1, id2) = (classSubjId c1, classSubjId c2)
                      in Left $ RichOverlappingClasses (valMap M.! id1, c1) (valMap M.! id2, c2) -- using the non-total function because the subject is sure to be found.
                    _ -> error "This should never happen (class id not found in Map of subjects)"
@@ -45,7 +41,7 @@ convertValues values = go values (Right (M.empty, []))
           case M.lookup id' valMap of
             Just repeatedSubj -> Left $ RepeatedSubjId id' subj repeatedSubj
             Nothing -> go xs (Right (M.insert id' subj valMap, cls <> classList))
-        
+
 data Class
   = MondayClass    {classSubjId :: T.Text, classInterval :: Interval}
   | TuesdayClass   {classSubjId :: T.Text, classInterval :: Interval}
@@ -56,7 +52,7 @@ data Class
   | SundayClass    {classSubjId :: T.Text, classInterval :: Interval}
 
 instance Show Class where
-  show x 
+  show x
     = case x of
         MondayClass    _ inter -> "Monday: " <> show inter
         TuesdayClass   _ inter -> "Monday: " <> show inter
@@ -65,7 +61,7 @@ instance Show Class where
         FridayClass    _ inter -> "Monday: " <> show inter
         SaturdayClass  _ inter -> "Monday: " <> show inter
         SundayClass    _ inter -> "Monday: " <> show inter
-      
+
 
 data Hour
   = H0   | H1   | H2  | H3  | H4  | H5
@@ -75,8 +71,8 @@ data Hour
   deriving (Eq, Ord)
 
 instance Show Hour where
- show x 
-  = case x of 
+ show x
+  = case x of
     H0  -> "00"
     H1  -> "01"
     H2  -> "02"
@@ -108,7 +104,7 @@ data Minute
   deriving (Eq, Ord)
 
 instance Show Minute where
-  show x 
+  show x
     = case x of
       ZeroMinutes -> "00"
       HalfAnHour  -> "30"
@@ -142,14 +138,14 @@ data Subject
      , subjProfessor :: T.Text
      }
 instance Show Subject where
-  show (MkSubject sname sprof) = "{ Subject name: " <> show sname 
+  show (MkSubject sname sprof) = "{ Subject name: " <> show sname
                               <> ", Subject professor: " <> show sprof  <> " }"
 
 subjectMap :: M.Map T.Text Subject
 subjectMap = M.empty
 
-data Error 
-  = OverlappingClasses Class Class 
+data Error
+  = OverlappingClasses Class Class
   | RichOverlappingClasses (Subject, Class) (Subject, Class)
   | RepeatedSubjId T.Text Subject Subject
   deriving Show
@@ -168,7 +164,7 @@ intervalsOverlap (MkInterval a b) (MkInterval x y)
   | otherwise        = False
 
 classesOverlap :: Class -> Class -> Bool
-classesOverlap class1 class2 
+classesOverlap class1 class2
   = case (class1, class2) of
       (MondayClass _ inter1, MondayClass _ inter2)       -> intervalsOverlap inter1 inter2
       (TuesdayClass _ inter1, TuesdayClass _ inter2)     -> intervalsOverlap inter1 inter2
@@ -177,13 +173,13 @@ classesOverlap class1 class2
       (FridayClass _ inter1, FridayClass _ inter2)       -> intervalsOverlap inter1 inter2
       (SaturdayClass _ inter1, SaturdayClass _ inter2)   -> intervalsOverlap inter1 inter2
       _                                              -> False
-      
+
 
 validateClasses :: [Class] -> Maybe Error
 validateClasses allClasses = foldl f Nothing combinations
   where combinations = toTup <$> tuples 2 allClasses
-        toTup xs 
-          = case xs of 
+        toTup xs
+          = case xs of
               (c1:c2:_) -> (c1, c2)
               _ -> error "This should never happen (list of more than 2 elements for combinations)"
         f :: Maybe Error-> (Class, Class) -> Maybe Error
@@ -192,7 +188,7 @@ validateClasses allClasses = foldl f Nothing combinations
                             else Nothing
         f err _ = err
 
-          
+
 
 
 -- validateIntervals :: [Interval] -> Maybe [Interval]
@@ -210,17 +206,17 @@ validateClasses allClasses = foldl f Nothing combinations
 -- -- assumes, the day of the class is validated beforehand
 -- validateDay :: [Class] -> Maybe [Class]
 -- validateDay classes = do
---   let intervals = fmap classInterval classes 
+--   let intervals = fmap classInterval classes
 --   case validateIntervals intervals of
 --     Just _ -> pure classes
 --     _      -> Nothing
 
 instance FromJSON Time where
-  parseJSON (String str) 
+  parseJSON (String str)
      = prependFailure "parsing Time failed, " $ case res of
-       [x,y] -> MkTime <$> h x <*> t y 
-       [] -> parseFail "inexistent hour for class"
-       _ -> parseFail "unexpected ':'. More than 1."
+       [x,y] -> MkTime <$> h x <*> t y
+       []    -> parseFail "inexistent hour for class"
+       _     -> parseFail "unexpected ':'. More than 1."
     where res =  T.splitOn ":" str
           h head' = case head' of
                       "00" -> pure H0
@@ -254,26 +250,26 @@ instance FromJSON Time where
                       _    -> parseFail $ "Invalid minutes: " <> T.unpack tail'
   parseJSON invalid =
         prependFailure "parsing Time failed, "
-            (typeMismatch "String" invalid) 
+            (typeMismatch "String" invalid)
 
 instance FromJSON Interval where
   parseJSON (Object obj) = do
-    beginningTime <- obj .: "inicio" 
+    beginningTime <- obj .: "inicio"
     endTime       <- obj .: "final"
     case createInterval beginningTime endTime of
-      Nothing              -> 
-                  parseFail $ "invalid Interval, class ends: " 
-                            <> show beginningTime 
+      Nothing              ->
+                  parseFail $ "invalid Interval, class ends: "
+                            <> show beginningTime
                             <> ", before it begins: "
                             <> show endTime
       Just validInterval -> pure validInterval
   parseJSON invalid =
         prependFailure "parsing Interval failed, "
-            (typeMismatch "Object" invalid) 
+            (typeMismatch "Object" invalid)
 
 instance {-# OVERLAPPING #-} FromJSON (T.Text -> Class) where
   parseJSON (Object obj) = prependFailure "parsing Class failed, " $ do
-    day      <- obj .: "dia" 
+    day      <- obj .: "dia"
     interval <- prependFailure ("in day '" <> T.unpack day <> "', ") $ parseJSON (Object obj)
     case day of
       "lunes"     -> pure $ \sid -> MondayClass sid interval
@@ -284,7 +280,7 @@ instance {-# OVERLAPPING #-} FromJSON (T.Text -> Class) where
       _           -> parseFail $ "Invalid Class day: " <> T.unpack day
   parseJSON invalid =
         prependFailure "parsing Interval failed, "
-            (typeMismatch "Object" invalid) 
+            (typeMismatch "Object" invalid)
 
 
 instance  {-# OVERLAPPING #-} FromJSON (T.Text, Subject, [Class]) where
@@ -292,17 +288,17 @@ instance  {-# OVERLAPPING #-} FromJSON (T.Text, Subject, [Class]) where
     name      <- obj .: "nombre"
     let errorInClassName = "in class '" <> T.unpack name <> "', "
     classId   <- prependFailure errorInClassName $ obj .: "id-clase"
-    let errorInClassId = errorInClassName 
-                      <> "with ID '" <> T.unpack classId <> "', " 
+    let errorInClassId = errorInClassName
+                      <> "with ID '" <> T.unpack classId <> "', "
     professor <- prependFailure errorInClassId $ obj .: "profesor"
-    let errorInClassProfessor = errorInClassId 
+    let errorInClassProfessor = errorInClassId
                               <> ("with Professor: '" <> T.unpack professor <> "', ")
     (classes' :: [T.Text -> Class]) <- prependFailure errorInClassProfessor $ obj .: "dias"
     let classes = fmap (\f -> f classId) classes'
-    
+
     pure (classId, MkSubject name professor, classes)
 
-    
+
   parseJSON invalid =
         prependFailure "parsing Interval failed, "
-            (typeMismatch "Object" invalid) 
+            (typeMismatch "Object" invalid)
