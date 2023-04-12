@@ -200,7 +200,7 @@ classesOverlap class1 class2
       (ThursdayClass _ inter1, ThursdayClass _ inter2)   -> intervalsOverlap inter1 inter2
       (FridayClass _ inter1, FridayClass _ inter2)       -> intervalsOverlap inter1 inter2
       (SaturdayClass _ inter1, SaturdayClass _ inter2)   -> intervalsOverlap inter1 inter2
-      _                                              -> False
+      _                                                  -> False
 
 validateClasses :: [Class] -> Maybe Error
 validateClasses allClasses = foldl f Nothing combinations
