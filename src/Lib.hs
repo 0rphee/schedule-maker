@@ -182,11 +182,11 @@ instance FromJSON Time where
                       "21" -> pure H21
                       "22" -> pure H22
                       "23" -> pure H23
-                      _    -> parseFail $ "Invalid hour: " <> T.unpack head'
+                      _    -> parseFail $ T.unpack $ "Invalid hour: " <> head'
           t tail' = case tail' of
                       "00" -> pure ZeroMinutes
                       "30" -> pure HalfAnHour
-                      _    -> parseFail $ "Invalid minutes: " <> T.unpack tail'
+                      _    -> parseFail $ T.unpack $ "Invalid minutes: " <> tail'
   parseJSON invalid =
         prependFailure "parsing Time failed, "
             (typeMismatch "String" invalid)
@@ -209,7 +209,7 @@ instance FromJSON Interval where
 instance {-# OVERLAPPING #-} FromJSON (T.Text -> Class) where
   parseJSON (Object obj) = prependFailure "parsing Class failed, " $ do
     day      <- obj .: "dia"
-    interval <- prependFailure ("in day '" <> T.unpack day <> "', ") $ parseJSON (Object obj)
+    interval <- prependFailure (T.unpack $ "in day '" <> day <> "', ") $ parseJSON (Object obj)
     case day of
       "lunes"     -> pure $ \sid -> MondayClass sid interval
       "martes"    -> pure $ \sid -> TuesdayClass sid interval
