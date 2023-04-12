@@ -8,7 +8,7 @@ module Lib (someFunc) where
 import Combinatorics    ( tuples )
 
 import Data.Aeson.Types ( parseFail, prependFailure, typeMismatch )
-import Data.Map         qualified as M
+import Data.Map.Strict  qualified as M
 import Data.Text        qualified as T
 import Data.Yaml        ( FromJSON (..), ParseException, Value (..),
                           decodeFileEither, prettyPrintParseException, (.:) )
