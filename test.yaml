@@ -1,27 +1,89 @@
 - nombre: POO
-  id-clase: "1234"
-  profesor: bernabe
+  id-clase: "0001"
+  profesor: ivan roberto rojas
   dias:
     - dia: lunes
-      inicio: 11:30
-      final: 12:30
+      inicio: 17:30
+      final: 19:00
     - dia: martes
-      inicio: 11:30
-      final: 12:30
-    - dia: miercoles
-      inicio: 11:30
-      final: 12:30
+      inicio: 17:30
+      final: 19:00
+    - dia: jueves
+      inicio: 17:30
+      final: 19:00
 
-- nombre: POO
-  id-clase: "1234"
-  profesor: bernabe
+- nombre: Persona y Sociedad
+  id-clase: "0002"
+  profesor: Ana Lucia de Haro
   dias:
     - dia: lunes
-      inicio: 11:30
-      final: 12:30
-    - dia: martes
-      inicio: 11:30
-      final: 12:30
+      inicio: 07:00
+      final: 08:30
+    - dia: viernes
+      inicio: 07:00
+      final: 08:30
+
+- nombre: Calculo Integral
+  id-clase: "0003"
+  profesor: Eduardo Bernabe
+  dias:
+    - dia: lunes
+      inicio: 08:30
+      final: 10:00
     - dia: miercoles
+      inicio: 08:30
+      final: 10:00
+    - dia: viernes
+      inicio: 08:30
+      final: 10:00
+
+- nombre: PA
+  id-clase: "0004"
+  profesor: Desconocido
+  dias:
+    - dia: lunes
+      inicio: 10:00
+      final: 11:30
+    - dia: jueves
+      inicio: 10:00
+      final: 11:30
+    - dia: viernes
+      inicio: 10:00
+      final: 11:30
+
+- nombre: Algebra Lineal
+  id-clase: "0005"
+  profesor: armando
+  dias:
+    - dia: lunes
+      inicio: 12:00
+      final: 13:30
+    - dia: miercoles
+      inicio: 12:00
+      final: 13:30
+    - dia: viernes
       inicio: 11:30
-      final: 12:30
+      final: 13:00
+
+- nombre: Comercializacion
+  id-clase: "0006"
+  profesor: Alan
+  dias:
+    - dia: martes
+      inicio: 10:00
+      final: 11:30
+    - dia: miercoles
+      inicio: 10:30
+      final: 12:00
+
+- nombre: Liderazgo
+  id-clase: "0007"
+  profesor: carlos soberanes
+  dias:
+    - dia: martes
+      inicio: 12:00
+      final: 13:00
+
+    - dia: jueves
+      inicio: 12:30
+      final: 14:00
