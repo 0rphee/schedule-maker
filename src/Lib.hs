@@ -13,34 +13,6 @@ import Data.Text        qualified as T
 import Data.Yaml        ( FromJSON (..), ParseException, Value (..),
                           decodeFileEither, prettyPrintParseException, (.:) )
 
-someFunc :: IO ()
-someFunc = do
-  (res :: Either ParseException [(T.Text, Subject, [Class])]) <- decodeFileEither "test.yaml"
-  case res of
-    Left err     -> putStrLn $ prettyPrintParseException err
-    Right result -> print $ convertValues result >>= runValidation
-
-runValidation :: (M.Map T.Text Subject, [Class]) -> Either Error String -- TODO: fix
-runValidation (valMap, classes)
-  = case validateClasses classes of
-      Nothing  -> Right "Everything alright!"  -- TODO: improve later
-      Just err -> case err of
-                   OverlappingClasses c1 c2 ->
-                    let (id1, id2) = (classSubjId c1, classSubjId c2)
-                     in Left $ RichOverlappingClasses (valMap M.! id1, c1) (valMap M.! id2, c2) -- using the non-total function because the subject is sure to be found.
-                   _ -> error "This should never happen (class id not found in Map of subjects)"
-
-convertValues :: [(T.Text, Subject, [Class])] -> Either Error (M.Map T.Text Subject, [Class])
-convertValues values = go values (Right (M.empty, []))
-  where go :: [(T.Text, Subject, [Class])] -> Either Error (M.Map T.Text Subject, [Class]) -> Either Error (M.Map T.Text Subject, [Class])
-        go [] result = result
-        go ((id', subj, cls):xs) res
-          = do
-          (valMap, classList) <- res
-          case M.lookup id' valMap of
-            Just repeatedSubj -> Left $ RepeatedSubjId id' subj repeatedSubj
-            Nothing -> go xs (Right (M.insert id' subj valMap, cls <> classList))
-
 data Class
   = MondayClass { classSubjId   :: T.Text
                 , classInterval :: Interval
@@ -168,7 +140,6 @@ instance Show Subject where
   show (MkSubject sname sprof) = "{ Subject name: " <> show sname
                               <> ", Subject professor: " <> show sprof  <> " }"
 
-
 data Error
   = OverlappingClasses Class Class
   | RichOverlappingClasses (Subject, Class) (Subject, Class)
@@ -179,40 +150,6 @@ createInterval :: Time -> Time -> Maybe Interval
 createInterval x y = if x < y
                      then Just $ MkInterval x y
                      else Nothing
-
-intervalsOverlap :: Interval -> Interval -> Bool
-intervalsOverlap (MkInterval a b) (MkInterval x y)
-  | a == x && b == y = True
-  | a < x && x < b   = True
-  | a < y && y < b   = True
-  | x < a && a < y   = True
-  | x < b && b < y   = True
-  | otherwise        = False
-
-classesOverlap :: Class -> Class -> Bool
-classesOverlap class1 class2
-  = case (class1, class2) of
-      (MondayClass _ inter1, MondayClass _ inter2)       -> intervalsOverlap inter1 inter2
-      (TuesdayClass _ inter1, TuesdayClass _ inter2)     -> intervalsOverlap inter1 inter2
-      (WednesdayClass _ inter1, WednesdayClass _ inter2) -> intervalsOverlap inter1 inter2
-      (ThursdayClass _ inter1, ThursdayClass _ inter2)   -> intervalsOverlap inter1 inter2
-      (FridayClass _ inter1, FridayClass _ inter2)       -> intervalsOverlap inter1 inter2
-      (SaturdayClass _ inter1, SaturdayClass _ inter2)   -> intervalsOverlap inter1 inter2
-      _                                                  -> False
-
-validateClasses :: [Class] -> Maybe Error
-validateClasses allClasses = foldl f Nothing combinations
-  where combinations = toTup <$> tuples 2 allClasses
-        toTup xs
-          = case xs of
-              (c1:c2:_) -> (c1, c2)
-              _ -> error "This should never happen (list of more than 2 elements for combinations)"
-        f :: Maybe Error -> (Class, Class) -> Maybe Error
-        f Nothing (c1, c2) = if classesOverlap c1 c2
-                             then Just $ OverlappingClasses c1 c2
-                             else Nothing
-        f err _ = err
-
 instance FromJSON Time where
   parseJSON (String str)
      = prependFailure "parsing Time failed, " $ case res of
@@ -302,3 +239,65 @@ instance  {-# OVERLAPPING #-} FromJSON (T.Text, Subject, [Class]) where
   parseJSON invalid =
         prependFailure "parsing Interval failed, "
             (typeMismatch "Object" invalid)
+
+intervalsOverlap :: Interval -> Interval -> Bool
+intervalsOverlap (MkInterval a b) (MkInterval x y)
+  | a == x && b == y = True
+  | a < x && x < b   = True
+  | a < y && y < b   = True
+  | x < a && a < y   = True
+  | x < b && b < y   = True
+  | otherwise        = False
+
+classesOverlap :: Class -> Class -> Bool
+classesOverlap class1 class2
+  = case (class1, class2) of
+      (MondayClass _ inter1, MondayClass _ inter2)       -> intervalsOverlap inter1 inter2
+      (TuesdayClass _ inter1, TuesdayClass _ inter2)     -> intervalsOverlap inter1 inter2
+      (WednesdayClass _ inter1, WednesdayClass _ inter2) -> intervalsOverlap inter1 inter2
+      (ThursdayClass _ inter1, ThursdayClass _ inter2)   -> intervalsOverlap inter1 inter2
+      (FridayClass _ inter1, FridayClass _ inter2)       -> intervalsOverlap inter1 inter2
+      (SaturdayClass _ inter1, SaturdayClass _ inter2)   -> intervalsOverlap inter1 inter2
+      _                                                  -> False
+
+validateClasses :: [Class] -> Maybe Error
+validateClasses allClasses = foldl f Nothing combinations
+  where combinations = toTup <$> tuples 2 allClasses
+        toTup xs
+          = case xs of
+              (c1:c2:_) -> (c1, c2)
+              _ -> error "This should never happen (list of more than 2 elements for combinations)"
+        f :: Maybe Error -> (Class, Class) -> Maybe Error
+        f Nothing (c1, c2) = if classesOverlap c1 c2
+                             then Just $ OverlappingClasses c1 c2
+                             else Nothing
+        f err _ = err
+
+runValidation :: (M.Map T.Text Subject, [Class]) -> Either Error String -- TODO: fix
+runValidation (valMap, classes)
+  = case validateClasses classes of
+      Nothing  -> Right "Everything alright!"  -- TODO: improve later
+      Just err -> case err of
+                   OverlappingClasses c1 c2 ->
+                    let (id1, id2) = (classSubjId c1, classSubjId c2)
+                     in Left $ RichOverlappingClasses (valMap M.! id1, c1) (valMap M.! id2, c2) -- using the non-total function because the subject is sure to be found.
+                   _ -> error "This should never happen (class id not found in Map of subjects)"
+
+convertValues :: [(T.Text, Subject, [Class])] -> Either Error (M.Map T.Text Subject, [Class])
+convertValues values = go values (Right (M.empty, []))
+  where go :: [(T.Text, Subject, [Class])] -> Either Error (M.Map T.Text Subject, [Class]) -> Either Error (M.Map T.Text Subject, [Class])
+        go [] result = result
+        go ((id', subj, cls):xs) res
+          = do
+          (valMap, classList) <- res
+          case M.lookup id' valMap of
+            Just repeatedSubj -> Left $ RepeatedSubjId id' subj repeatedSubj
+            Nothing -> go xs (Right (M.insert id' subj valMap, cls <> classList))
+
+someFunc :: IO ()
+someFunc = do
+  (res :: Either ParseException [(T.Text, Subject, [Class])]) <- decodeFileEither "test.yaml"
+  case res of
+    Left err     -> putStrLn $ prettyPrintParseException err
+    Right result -> print $ convertValues result >>= runValidation
+
