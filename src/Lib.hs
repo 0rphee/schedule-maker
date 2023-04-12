@@ -43,31 +43,65 @@ convertValues values = go values (Right (M.empty, []))
             Nothing -> go xs (Right (M.insert id' subj valMap, cls <> classList))
 
 data Class
-  = MondayClass    {classSubjId :: T.Text, classInterval :: Interval}
-  | TuesdayClass   {classSubjId :: T.Text, classInterval :: Interval}
-  | WednesdayClass {classSubjId :: T.Text, classInterval :: Interval}
-  | ThursdayClass  {classSubjId :: T.Text, classInterval :: Interval}
-  | FridayClass    {classSubjId :: T.Text, classInterval :: Interval}
-  | SaturdayClass  {classSubjId :: T.Text, classInterval :: Interval}
-  | SundayClass    {classSubjId :: T.Text, classInterval :: Interval}
+  = MondayClass { classSubjId   :: T.Text
+                , classInterval :: Interval
+                }
+  | TuesdayClass { classSubjId   :: T.Text
+                 , classInterval :: Interval
+                 }
+  | WednesdayClass { classSubjId   :: T.Text
+                   , classInterval :: Interval
+                   }
+  | ThursdayClass { classSubjId   :: T.Text
+                  , classInterval :: Interval
+                  }
+  | FridayClass { classSubjId   :: T.Text
+                , classInterval :: Interval
+                }
+  | SaturdayClass { classSubjId   :: T.Text
+                  , classInterval :: Interval
+                  }
+  | SundayClass { classSubjId   :: T.Text
+                , classInterval :: Interval
+                }
 
 instance Show Class where
   show x
     = case x of
         MondayClass    _ inter -> "Monday: " <> show inter
-        TuesdayClass   _ inter -> "Monday: " <> show inter
-        WednesdayClass _ inter -> "Monday: " <> show inter
-        ThursdayClass  _ inter -> "Monday: " <> show inter
-        FridayClass    _ inter -> "Monday: " <> show inter
-        SaturdayClass  _ inter -> "Monday: " <> show inter
-        SundayClass    _ inter -> "Monday: " <> show inter
+        TuesdayClass   _ inter -> "Tuesday: " <> show inter
+        WednesdayClass _ inter -> "Wednesday: " <> show inter
+        ThursdayClass  _ inter -> "Thursday: " <> show inter
+        FridayClass    _ inter -> "Friday: " <> show inter
+        SaturdayClass  _ inter -> "Saturday: " <> show inter
+        SundayClass    _ inter -> "Sunday: " <> show inter
 
 
 data Hour
-  = H0   | H1   | H2  | H3  | H4  | H5
-  | H6   | H7   | H8  | H9  | H10 | H11
-  | H12  | H13  | H14 | H15 | H16 | H17
-  | H18  | H19  | H20 | H21 | H22 | H23
+  = H0
+  | H1
+  | H2
+  | H3
+  | H4
+  | H5
+  | H6
+  | H7
+  | H8
+  | H9
+  | H10
+  | H11
+  | H12
+  | H13
+  | H14
+  | H15
+  | H16
+  | H17
+  | H18
+  | H19
+  | H20
+  | H21
+  | H22
+  | H23
   deriving (Eq, Ord)
 
 instance Show Hour where
@@ -110,11 +144,9 @@ instance Show Minute where
       HalfAnHour  -> "30"
 
 data Time
-  = MkTime
-  {
-    timeHour   :: Hour
-  , timeMinute :: Minute
-  }
+  = MkTime { timeHour   :: Hour
+           , timeMinute :: Minute
+           }
   deriving (Eq, Ord)
 
 instance Show Time where
@@ -122,21 +154,17 @@ instance Show Time where
 
 
 data Interval
- = MkInterval
-    {
-      intervalStartingTime :: Time
-    , intervalEndTime      :: Time
-    }
+  = MkInterval { intervalStartingTime :: Time
+               , intervalEndTime      :: Time
+               }
 
 instance Show Interval where
   show (MkInterval beginning end) = show beginning <> "-" <> show end
 
 data Subject
-   = MkSubject
-     {
-       subjName      :: T.Text
-     , subjProfessor :: T.Text
-     }
+  = MkSubject { subjName      :: T.Text
+              , subjProfessor :: T.Text
+              }
 instance Show Subject where
   show (MkSubject sname sprof) = "{ Subject name: " <> show sname
                               <> ", Subject professor: " <> show sprof  <> " }"
@@ -148,7 +176,7 @@ data Error
   = OverlappingClasses Class Class
   | RichOverlappingClasses (Subject, Class) (Subject, Class)
   | RepeatedSubjId T.Text Subject Subject
-  deriving Show
+  deriving (Show)
 
 createInterval :: Time -> Time -> Maybe Interval
 createInterval x y = if x < y
@@ -182,10 +210,10 @@ validateClasses allClasses = foldl f Nothing combinations
           = case xs of
               (c1:c2:_) -> (c1, c2)
               _ -> error "This should never happen (list of more than 2 elements for combinations)"
-        f :: Maybe Error-> (Class, Class) -> Maybe Error
-        f Nothing (c1, c2)= if classesOverlap c1 c2
-                            then Just $ OverlappingClasses c1 c2
-                            else Nothing
+        f :: Maybe Error -> (Class, Class) -> Maybe Error
+        f Nothing (c1, c2) = if classesOverlap c1 c2
+                             then Just $ OverlappingClasses c1 c2
+                             else Nothing
         f err _ = err
 
 
