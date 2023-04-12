@@ -185,10 +185,11 @@ createInterval x y = if x < y
 
 intervalsOverlap :: Interval -> Interval -> Bool
 intervalsOverlap (MkInterval a b) (MkInterval x y)
-  | a <= x && x <= b = True
-  | a <= y && y <= b = True
-  | x <= a && a <= y = True
-  | x <= b && b <= y = True
+  | a == x && b == y = True
+  | a < x && x < b   = True
+  | a < y && y < b   = True
+  | x < a && a < y   = True
+  | x < b && b < y   = True
   | otherwise        = False
 
 classesOverlap :: Class -> Class -> Bool
