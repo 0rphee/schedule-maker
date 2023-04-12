@@ -168,8 +168,6 @@ instance Show Subject where
   show (MkSubject sname sprof) = "{ Subject name: " <> show sname
                               <> ", Subject professor: " <> show sprof  <> " }"
 
-subjectMap :: M.Map T.Text Subject
-subjectMap = M.empty
 
 data Error
   = OverlappingClasses Class Class
