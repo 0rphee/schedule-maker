@@ -216,29 +216,6 @@ validateClasses allClasses = foldl f Nothing combinations
                              else Nothing
         f err _ = err
 
-
-
-
--- validateIntervals :: [Interval] -> Maybe [Interval]
--- validateIntervals ls = go ls []
---   where go :: [Interval] -> [Interval] -> Maybe [Interval]
---         go rest [] = case rest of
---                        []     -> Nothing
---                        (x:xs) -> go xs [x]
---         go [] accuml = Just accuml
---         go (x:xs) (itemToValidate:validatedItems)
---           = case traverse (intervalsOverlap itemToValidate) (x:xs) of
---               Nothing -> Nothing
---               _       -> go xs (x:itemToValidate:validatedItems)
-
--- -- assumes, the day of the class is validated beforehand
--- validateDay :: [Class] -> Maybe [Class]
--- validateDay classes = do
---   let intervals = fmap classInterval classes
---   case validateIntervals intervals of
---     Just _ -> pure classes
---     _      -> Nothing
-
 instance FromJSON Time where
   parseJSON (String str)
      = prependFailure "parsing Time failed, " $ case res of
