@@ -202,7 +202,6 @@ classesOverlap class1 class2
       (SaturdayClass _ inter1, SaturdayClass _ inter2)   -> intervalsOverlap inter1 inter2
       _                                              -> False
 
-
 validateClasses :: [Class] -> Maybe Error
 validateClasses allClasses = foldl f Nothing combinations
   where combinations = toTup <$> tuples 2 allClasses
@@ -287,7 +286,6 @@ instance {-# OVERLAPPING #-} FromJSON (T.Text -> Class) where
         prependFailure "parsing Interval failed, "
             (typeMismatch "Object" invalid)
 
-
 instance  {-# OVERLAPPING #-} FromJSON (T.Text, Subject, [Class]) where
   parseJSON (Object obj) = prependFailure "parsing Subject failed, " $ do
     name      <- obj .: "nombre"
@@ -302,7 +300,6 @@ instance  {-# OVERLAPPING #-} FromJSON (T.Text, Subject, [Class]) where
     let classes = fmap (\f -> f classId) classes'
 
     pure (classId, MkSubject name professor, classes)
-
 
   parseJSON invalid =
         prependFailure "parsing Interval failed, "
