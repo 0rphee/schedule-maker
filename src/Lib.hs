@@ -3,7 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections       #-}
 
-module Lib (someFunc) where
+module Lib (program) where
 
 import Combinatorics    ( tuples )
 
@@ -255,44 +255,65 @@ classesOverlap class1 class2
       (SaturdayClass inter1, SaturdayClass inter2)   -> intervalsOverlap inter1 inter2
       _                                                  -> False
 
-validateClasses :: [Class] -> Maybe Error
-validateClasses allClasses = foldl f Nothing combinations
-  where combinations = toTup <$> tuples 2 allClasses
-        toTup xs
-          = case xs of
-              (c1:c2:_) -> (c1, c2)
-              _ -> error "This should never happen (list of more than 2 elements for combinations)"
-        f :: Maybe Error -> (Class, Class) -> Maybe Error
-        f Nothing (c1, c2) = if classesOverlap c1 c2
-                             then Just $ OverlappingClasses c1 c2
-                             else Nothing
-        f err _ = err
-
-runValidation :: (M.Map T.Text Subject, [Class]) -> Either Error String -- TODO: fix
-runValidation (valMap, classes)
-  = case validateClasses classes of
-      Nothing  -> Right "Everything alright!"  -- TODO: improve later
-      Just err -> case err of
-                   OverlappingClasses c1 c2 ->
-                    let (id1, id2) = (classSubjId c1, classSubjId c2)
-                     in Left $ RichOverlappingClasses (valMap M.! id1, c1) (valMap M.! id2, c2) -- using the non-total function because the subject is sure to be found.
-                   _ -> error "This should never happen (class id not found in Map of subjects)"
-
-convertValues :: [(T.Text, Subject, [Class])] -> Either Error (M.Map T.Text Subject, [Class])
-convertValues values = go values (Right (M.empty, []))
-  where go :: [(T.Text, Subject, [Class])] -> Either Error (M.Map T.Text Subject, [Class]) -> Either Error (M.Map T.Text Subject, [Class])
+getMapsFromValues :: [(T.Text, Subject)] -> Either Error (M.Map T.Text [T.Text], M.Map T.Text Subject)
+getMapsFromValues values = go values (Right (M.empty, M.empty))
+  where go :: [(T.Text, Subject)] -> Either Error (M.Map T.Text [T.Text], M.Map T.Text Subject) -> Either Error (M.Map T.Text [T.Text], M.Map T.Text Subject)
         go [] result = result
-        go ((id', subj, cls):xs) res
+        go ((id', subj):xs) res
           = do
-          (valMap, classList) <- res
+          (keyMap, valMap) <- res
           case M.lookup id' valMap of
             Just repeatedSubj -> Left $ RepeatedSubjId id' subj repeatedSubj
-            Nothing -> go xs (Right (M.insert id' subj valMap, cls <> classList))
+            Nothing -> go xs (Right (M.alter alteringFunc subjName keyMap , M.insert id' subj valMap))
+          where (MkSubject subjName _ _) = subj
+                alteringFunc :: Maybe [T.Text] -> Maybe [T.Text]
+                alteringFunc (Just valueInside) = Just (id':valueInside)
+                alteringFunc Nothing            = Just [id']
 
-someFunc :: IO ()
-someFunc = do
-  (res :: Either ParseException [(T.Text, Subject, [Class])]) <- decodeFileEither "test.yaml"
+genPossibleClassCombinations :: (Applicative f)
+                            =>  M.Map T.Text (f T.Text) -> f [T.Text] -- outpts the list of lists of ids as Text
+genPossibleClassCombinations = sequenceA . M.elems
+-- genPossibleClassCombinations = map M.elems . sequenceA
+
+validate :: M.Map T.Text Subject -> [[T.Text]] -> ([Error], [[Subject]]) -- (errors, and successes)
+validate allSubjectsMp = foldl foldingF ([],[])
+  where validateSubj :: [T.Text] -> Maybe Error
+        validateSubj combinations = validateClasses' asClasses -- combinations: ["1243", "1445", ..]
+          where asClasses = mconcat $ fmap (\txtId -> (txtId, ) <$> subjclasses (allSubjectsMp M.! txtId)) combinations
+
+                validateClasses' :: [(T.Text, Class)] -> Maybe Error
+                validateClasses' allClasses = foldl f Nothing pairCombinations
+                  where pairCombinations = toTup <$> tuples 2 allClasses
+                        toTup xs = case xs of
+                                     [c1, c2] -> (c1, c2)
+                                     _ -> error "This should never happen (list of more than 2 elements for combinations)" -- see `tuples` function
+                        f :: Maybe Error -> ((T.Text, Class), (T.Text, Class)) -> Maybe Error
+                        f Nothing ((id1, c1), (id2, c2)) = if classesOverlap c1 c2
+                                                           then Just $ RichOverlappingClasses (allSubjectsMp M.! id1, c1) (allSubjectsMp M.! id2, c2)
+                                                           else Nothing
+                        f err _ = err
+
+        foldingF :: ([Error], [[Subject]]) -> [T.Text] -> ([Error], [[Subject]])
+        foldingF (errs, validSchedules) xs
+          = case validateSubj xs of
+              Just err -> (err:errs, validSchedules)
+              Nothing  -> let validCombination = fmap (allSubjectsMp M.!) xs
+                           in (errs, validCombination :validSchedules)
+
+
+program :: IO ()
+program = do
+  (res :: Either ParseException [(T.Text, Subject)]) <- decodeFileEither "test.yaml"
   case res of
     Left err     -> putStrLn $ prettyPrintParseException err
-    Right result -> print $ convertValues result >>= runValidation
+    Right result -> print $ collectValidationResults result
+
+collectValidationResults :: [(T.Text, Subject)] -> Either [Error] [[Subject]]
+collectValidationResults xs = do
+  (materias, db) <- first (:[]) $ getMapsFromValues xs
+  let allSubjectCombinations = genPossibleClassCombinations materias
+  let validationResults = validate db allSubjectCombinations
+  case validationResults of
+    (errorList, []) -> Left errorList
+    (_, successes)  -> pure successes
 
