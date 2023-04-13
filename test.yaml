@@ -87,3 +87,46 @@
     - dia: jueves
       inicio: 12:30
       final: 14:00
+
+
+- nombre: Calculo Integral
+  id-clase: "0008"
+  profesor: Prof 1
+  dias:
+    - dia: lunes
+      inicio: 14:30
+      final: 16:00
+    - dia: jueves
+      inicio: 14:30
+      final: 16:00
+    - dia: viernes
+      inicio: 14:30
+      final: 16:00
+
+- nombre: PA
+  id-clase: "0009"
+  profesor: Prof 2
+  dias:
+    - dia: lunes
+      inicio: 11:30
+      final: 13:00
+    - dia: martes
+      inicio: 14:30
+      final: 16:00
+    - dia: miercoles
+      inicio: 12:00
+      final: 13:30
+
+- nombre: Algebra Lineal
+  id-clase: "0010"
+  profesor: Prof 3
+  dias:
+    - dia: lunes
+      inicio: 13:00
+      final: 14:30
+    - dia: martes
+      inicio: 08:30
+      final: 10:00
+    - dia: miercoles
+      inicio: 08:30
+      final: 10:00
