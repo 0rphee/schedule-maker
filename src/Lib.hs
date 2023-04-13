@@ -15,38 +15,31 @@ import Data.Yaml        ( FromJSON (..), ParseException, Value (..),
                           decodeFileEither, prettyPrintParseException, (.:) )
 
 data Class
-  = MondayClass { classSubjId   :: T.Text
-                , classInterval :: Interval
+  = MondayClass { classInterval :: Interval
                 }
-  | TuesdayClass { classSubjId   :: T.Text
-                 , classInterval :: Interval
+  | TuesdayClass { classInterval :: Interval
                  }
-  | WednesdayClass { classSubjId   :: T.Text
-                   , classInterval :: Interval
+  | WednesdayClass { classInterval :: Interval
                    }
-  | ThursdayClass { classSubjId   :: T.Text
-                  , classInterval :: Interval
+  | ThursdayClass { classInterval :: Interval
                   }
-  | FridayClass { classSubjId   :: T.Text
-                , classInterval :: Interval
+  | FridayClass { classInterval :: Interval
                 }
-  | SaturdayClass { classSubjId   :: T.Text
-                  , classInterval :: Interval
+  | SaturdayClass { classInterval :: Interval
                   }
-  | SundayClass { classSubjId   :: T.Text
-                , classInterval :: Interval
+  | SundayClass { classInterval :: Interval
                 }
 
 instance Show Class where
   show x
     = case x of
-        MondayClass    _ inter -> "Monday: " <> show inter
-        TuesdayClass   _ inter -> "Tuesday: " <> show inter
-        WednesdayClass _ inter -> "Wednesday: " <> show inter
-        ThursdayClass  _ inter -> "Thursday: " <> show inter
-        FridayClass    _ inter -> "Friday: " <> show inter
-        SaturdayClass  _ inter -> "Saturday: " <> show inter
-        SundayClass    _ inter -> "Sunday: " <> show inter
+        MondayClass    inter -> "Monday: " <> show inter
+        TuesdayClass   inter -> "Tuesday: " <> show inter
+        WednesdayClass inter -> "Wednesday: " <> show inter
+        ThursdayClass  inter -> "Thursday: " <> show inter
+        FridayClass    inter -> "Friday: " <> show inter
+        SaturdayClass  inter -> "Saturday: " <> show inter
+        SundayClass    inter -> "Sunday: " <> show inter
 
 
 data Hour
@@ -136,10 +129,13 @@ instance Show Interval where
 data Subject
   = MkSubject { subjName      :: T.Text
               , subjProfessor :: T.Text
+              , subjclasses   :: [Class]
+                -- maybe will change to S.Seq
               }
+
 instance Show Subject where
-  show (MkSubject sname sprof) = "{ Subject name: " <> show sname
-                              <> ", Subject professor: " <> show sprof  <> " }"
+  show (MkSubject sname sprof classes) = "{ Subject name: " <> show sname
+                              <> ", Subject professor: " <> show sprof  <> ", Subject classes "<> show classes <>  " }"
 
 data Error
   = OverlappingClasses Class Class
@@ -207,22 +203,22 @@ instance FromJSON Interval where
         prependFailure "parsing Interval failed, "
             (typeMismatch "Object" invalid)
 
-instance {-# OVERLAPPING #-} FromJSON (T.Text -> Class) where
+instance {-# OVERLAPPING #-} FromJSON Class where
   parseJSON (Object obj) = prependFailure "parsing Class failed, " $ do
     day      <- obj .: "dia"
     interval <- prependFailure (T.unpack $ "in day '" <> day <> "', ") $ parseJSON (Object obj)
     case day of
-      "lunes"     -> pure $ \sid -> MondayClass sid interval
-      "martes"    -> pure $ \sid -> TuesdayClass sid interval
-      "miercoles" -> pure $ \sid -> WednesdayClass sid interval
-      "jueves"    -> pure $ \sid -> ThursdayClass sid interval
-      "viernes"   -> pure $ \sid -> FridayClass sid interval
+      "lunes"     -> pure $ MondayClass interval
+      "martes"    -> pure $ TuesdayClass interval
+      "miercoles" -> pure $ WednesdayClass interval
+      "jueves"    -> pure $ ThursdayClass interval
+      "viernes"   -> pure $ FridayClass interval
       _           -> parseFail $ "Invalid Class day: " <> T.unpack day
   parseJSON invalid =
         prependFailure "parsing Interval failed, "
             (typeMismatch "Object" invalid)
 
-instance  {-# OVERLAPPING #-} FromJSON (T.Text, Subject, [Class]) where
+instance  {-# OVERLAPPING #-} FromJSON (T.Text, Subject) where
   parseJSON (Object obj) = prependFailure "parsing Subject failed, " $ do
     name      <- obj .: "nombre"
     let errorInClassName = "in class '" <> T.unpack name <> "', "
@@ -232,10 +228,8 @@ instance  {-# OVERLAPPING #-} FromJSON (T.Text, Subject, [Class]) where
     professor <- prependFailure errorInClassId $ obj .: "profesor"
     let errorInClassProfessor = errorInClassId
                               <> ("with Professor: '" <> T.unpack professor <> "', ")
-    (classes' :: [T.Text -> Class]) <- prependFailure errorInClassProfessor $ obj .: "dias"
-    let classes = fmap (\f -> f classId) classes'
-
-    pure (classId, MkSubject name professor, classes)
+    classes <- prependFailure errorInClassProfessor $ obj .: "dias"
+    pure (classId, MkSubject name professor classes)
 
   parseJSON invalid =
         prependFailure "parsing Interval failed, "
