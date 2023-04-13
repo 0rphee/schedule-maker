@@ -24,15 +24,9 @@ dependencies:
 - text
 - yaml
 - aeson
-- vector
 - combinatorial
 - containers
 - prettyprinter
-# - brick
-# - microlens
-# - microlens-th
-# - vty
-# - transformers
 
 ghc-options:
 - -Wall

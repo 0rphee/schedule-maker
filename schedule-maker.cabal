@@ -40,7 +40,6 @@ library
     , containers
     , prettyprinter
     , text
-    , vector
     , yaml
   default-language: Haskell2010
 
@@ -61,7 +60,6 @@ executable schedule-maker-exe
     , prettyprinter
     , schedule-maker
     , text
-    , vector
     , yaml
   default-language: Haskell2010
 
@@ -83,6 +81,5 @@ test-suite schedule-maker-test
     , prettyprinter
     , schedule-maker
     , text
-    , vector
     , yaml
   default-language: Haskell2010
