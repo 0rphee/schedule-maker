@@ -247,12 +247,12 @@ intervalsOverlap (MkInterval a b) (MkInterval x y)
 classesOverlap :: Class -> Class -> Bool
 classesOverlap class1 class2
   = case (class1, class2) of
-      (MondayClass _ inter1, MondayClass _ inter2)       -> intervalsOverlap inter1 inter2
-      (TuesdayClass _ inter1, TuesdayClass _ inter2)     -> intervalsOverlap inter1 inter2
-      (WednesdayClass _ inter1, WednesdayClass _ inter2) -> intervalsOverlap inter1 inter2
-      (ThursdayClass _ inter1, ThursdayClass _ inter2)   -> intervalsOverlap inter1 inter2
-      (FridayClass _ inter1, FridayClass _ inter2)       -> intervalsOverlap inter1 inter2
-      (SaturdayClass _ inter1, SaturdayClass _ inter2)   -> intervalsOverlap inter1 inter2
+      (MondayClass inter1, MondayClass inter2)       -> intervalsOverlap inter1 inter2
+      (TuesdayClass inter1, TuesdayClass inter2)     -> intervalsOverlap inter1 inter2
+      (WednesdayClass inter1, WednesdayClass inter2) -> intervalsOverlap inter1 inter2
+      (ThursdayClass inter1, ThursdayClass inter2)   -> intervalsOverlap inter1 inter2
+      (FridayClass inter1, FridayClass inter2)       -> intervalsOverlap inter1 inter2
+      (SaturdayClass inter1, SaturdayClass inter2)   -> intervalsOverlap inter1 inter2
       _                                                  -> False
 
 validateClasses :: [Class] -> Maybe Error
