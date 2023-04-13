@@ -1,6 +1,6 @@
 - nombre: POO
   id-clase: "0001"
-  profesor: ivan roberto rojas
+  profesor: rojas
   dias:
     - dia: lunes
       inicio: 17:30
@@ -14,7 +14,7 @@
 
 - nombre: Persona y Sociedad
   id-clase: "0002"
-  profesor: Ana Lucia de Haro
+  profesor: de Haro
   dias:
     - dia: lunes
       inicio: 07:00
@@ -78,7 +78,7 @@
 
 - nombre: Liderazgo
   id-clase: "0007"
-  profesor: carlos soberanes
+  profesor: soberanes
   dias:
     - dia: martes
       inicio: 12:00
