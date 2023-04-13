@@ -1,13 +1,14 @@
-{-# OPTIONS_GHC -Wno-unused-top-binds #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections       #-}
 
 module Lib (someFunc) where
 
 import Combinatorics    ( tuples )
 
 import Data.Aeson.Types ( parseFail, prependFailure, typeMismatch )
+import Data.Bifunctor   ( Bifunctor (first) )
 import Data.Map.Strict  qualified as M
 import Data.Text        qualified as T
 import Data.Yaml        ( FromJSON (..), ParseException, Value (..),
