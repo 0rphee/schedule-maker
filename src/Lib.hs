@@ -178,6 +178,15 @@ instance FromJSON Time where
                       "21" -> pure H21
                       "22" -> pure H22
                       "23" -> pure H23
+                      "1"  -> pure H1
+                      "2"  -> pure H2
+                      "3"  -> pure H3
+                      "4"  -> pure H4
+                      "5"  -> pure H5
+                      "6"  -> pure H6
+                      "7"  -> pure H7
+                      "8"  -> pure H8
+                      "9"  -> pure H9
                       _    -> parseFail $ T.unpack $ "Invalid hour: " <> head'
           t tail' = case tail' of
                       "00" -> pure ZeroMinutes
