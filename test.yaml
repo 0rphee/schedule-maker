@@ -17,11 +17,11 @@
   profesor: de Haro
   dias:
     - dia: lunes
-      inicio: 07:00
-      final: 08:30
+      inicio: 7:00
+      final: 8:30
     - dia: viernes
-      inicio: 07:00
-      final: 08:30
+      inicio: 7:00
+      final: 8:30
 
 - nombre: Calculo Integral
   id-clase: "0003"
