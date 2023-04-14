@@ -138,8 +138,7 @@ instance Show Subject where
                               <> ", Subject professor: " <> show sprof  <> ", Subject classes "<> show classes <>  " }"
 
 data Error
-  = OverlappingClasses Class Class
-  | RichOverlappingClasses (Subject, Class) (Subject, Class)
+  = OverlappingClasses (Subject, Class) (Subject, Class)
   | RepeatedSubjId T.Text Subject Subject
   deriving (Show)
 
@@ -289,7 +288,7 @@ validate allSubjectsMp = foldl foldingF ([],[])
                                      _ -> error "This should never happen (list of more than 2 elements for combinations)" -- see `tuples` function
                         f :: Maybe Error -> ((T.Text, Class), (T.Text, Class)) -> Maybe Error
                         f Nothing ((id1, c1), (id2, c2)) = if classesOverlap c1 c2
-                                                           then Just $ RichOverlappingClasses (allSubjectsMp M.! id1, c1) (allSubjectsMp M.! id2, c2)
+                                                           then Just $ OverlappingClasses (allSubjectsMp M.! id1, c1) (allSubjectsMp M.! id2, c2)
                                                            else Nothing
                         f err _ = err
 
