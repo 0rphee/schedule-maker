@@ -27,6 +27,7 @@ dependencies:
 - combinatorial
 - containers
 - prettyprinter
+- prettyprinter-ansi-terminal
 
 ghc-options:
 - -Wall

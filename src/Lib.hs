@@ -5,14 +5,18 @@
 
 module Lib (program) where
 
-import Combinatorics    ( tuples )
+import Combinatorics                 ( tuples )
 
-import Data.Aeson.Types ( parseFail, prependFailure, typeMismatch )
-import Data.Bifunctor   ( Bifunctor (first) )
-import Data.Map.Strict  qualified as M
-import Data.Text        qualified as T
-import Data.Yaml        ( FromJSON (..), ParseException, Value (..),
-                          decodeFileEither, prettyPrintParseException, (.:) )
+import Data.Aeson.Types              ( parseFail, prependFailure, typeMismatch )
+import Data.Bifunctor                ( Bifunctor (first) )
+import Data.Map.Strict               qualified as M
+import Data.Text                     qualified as T
+import Data.Yaml                     ( FromJSON (..), ParseException,
+                                       Value (..), decodeFileEither,
+                                       prettyPrintParseException, (.:) )
+
+import Prettyprinter
+import Prettyprinter.Render.Terminal
 
 data Class
   = MondayClass { classInterval :: Interval
@@ -314,7 +318,7 @@ program = do
   (res :: Either ParseException [(T.Text, Subject)]) <- decodeFileEither "test.yaml"
   case res of
     Left err     -> putStrLn $ prettyPrintParseException err
-    Right result -> print $ collectValidationResults result
+    Right result -> putDoc . either annotateErrors annotateSubjectLists $ collectValidationResults result
 
 collectValidationResults :: [(T.Text, Subject)] -> Either [Error] [[Subject]]
 collectValidationResults xs = do
@@ -325,3 +329,104 @@ collectValidationResults xs = do
     (errorList, []) -> Left errorList
     (_, successes)  -> pure successes
 
+-- pretty print
+
+instance Pretty Class where
+  pretty (MondayClass interval)    = "Monday:   " <+> pretty interval
+  pretty (TuesdayClass interval)   = "Tuesday:  " <+> pretty interval
+  pretty (WednesdayClass interval) = "Wednesday:" <+> pretty interval
+  pretty (ThursdayClass interval)  = "Thursday: " <+> pretty interval
+  pretty (FridayClass interval)    = "Friday:   " <+> pretty interval
+  pretty (SaturdayClass interval)  = "Saturday: " <+> pretty interval
+  pretty (SundayClass interval)    = "Sunday:   " <+> pretty interval
+
+instance Pretty Hour where
+  pretty H0  = "00"
+  pretty H1  = "01"
+  pretty H2  = "02"
+  pretty H3  = "03"
+  pretty H4  = "04"
+  pretty H5  = "05"
+  pretty H6  = "06"
+  pretty H7  = "07"
+  pretty H8  = "08"
+  pretty H9  = "09"
+  pretty H10 = "10"
+  pretty H11 = "11"
+  pretty H12 = "12"
+  pretty H13 = "13"
+  pretty H14 = "14"
+  pretty H15 = "15"
+  pretty H16 = "16"
+  pretty H17 = "17"
+  pretty H18 = "18"
+  pretty H19 = "19"
+  pretty H20 = "20"
+  pretty H21 = "21"
+  pretty H22 = "22"
+  pretty H23 = "23"
+
+instance Pretty Minute where
+  pretty ZeroMinutes = "00"
+  pretty HalfAnHour  = "30"
+
+
+instance Pretty Time where
+  pretty (MkTime h m) = pretty h <> ":" <> pretty m
+
+instance Pretty Interval where
+  pretty (MkInterval start end) = pretty start <+> "-" <+> pretty end
+
+instance Pretty Subject where
+  pretty (MkSubject name professor classes) = "Subject: " <> pretty name <> line <>
+                                              "Professor: " <> pretty professor <> line <>
+                                              "Classes:" <> line <>
+                                              indent 2 (vsep (map pretty classes))
+
+instance Pretty Error where
+  pretty (OverlappingClasses (subj1, class1) (subj2, class2))
+    = "Overlapping classes:" <> line
+    <> indent 2 (vsep [pretty subj1 <+> pretty class1, pretty subj2 <+> pretty class2])
+  pretty (RepeatedSubjId subjId subj1 subj2)
+    = "Repeated subject ID: " <> pretty subjId <> line <>
+      indent 2 (vsep [pretty subj1, pretty subj2])
+
+
+-- annotateInterval :: Interval -> Doc AnsiStyle
+-- annotateInterval  = annotate
+
+-- annotateClass :: Class -> Doc AnsiStyle
+-- annotateClass c = annotate (color Cyan <> bold) (annotateClass' c)
+
+annotateClass :: Class -> Doc AnsiStyle
+annotateClass (MondayClass interval)    = annotate (color Cyan <> bold) "Monday:   " <+> pretty interval
+annotateClass (TuesdayClass interval)   = annotate (color Cyan <> bold) "Tuesday:  " <+> pretty interval
+annotateClass (WednesdayClass interval) = annotate (color Cyan <> bold) "Wednesday:" <+> pretty interval
+annotateClass (ThursdayClass interval)  = annotate (color Cyan <> bold) "Thursday: " <+> pretty interval
+annotateClass (FridayClass interval)    = annotate (color Cyan <> bold) "Friday:   " <+> pretty interval
+annotateClass (SaturdayClass interval)  = annotate (color Cyan <> bold) "Saturday: " <+> pretty interval
+annotateClass (SundayClass interval)    = annotate (color Cyan <> bold) "Sunday:   " <+> pretty interval
+
+annotateSubject :: Subject -> Doc AnsiStyle
+annotateSubject (MkSubject name professor classes)
+  = annotate (color Blue <> bold) "Subject:   " <> pretty name <> line <>
+    annotate (color Blue <> bold) "Professor: " <> pretty professor <> line <>
+    annotate (color Blue <> bold) "Classes:" <> line <>
+    indent 2 (vsep (map annotateClass classes))
+
+annotateError :: Error -> Doc AnsiStyle
+annotateError (OverlappingClasses (subj1, class1) (subj2, class2)) =
+  annotate (color Red <> bold) "Overlapping classes:" <> line <>
+  indent 2 (vsep [pretty subj1 <+> pretty class1, pretty subj2 <+> pretty class2])
+annotateError (RepeatedSubjId subjId subj1 subj2) =
+  annotate (color Red <> bold) "Repeated subject ID: " <> pretty subjId <> line <>
+  indent 2 (vsep [pretty subj1, pretty subj2])
+
+annotateErrors :: [Error] -> Doc AnsiStyle
+annotateErrors es = annotate (color Red <> bold) (concatWith (\l r -> l <> line <> "----" <> line <> r) (map annotateError es))
+
+annotateSubjectList :: [Subject] -> Doc AnsiStyle
+annotateSubjectList ss = concatWith (\l r -> l <> line <> fill 15 "-" <> line <> r) (map annotateSubject ss)
+
+annotateSubjectLists :: [[Subject]] -> Doc AnsiStyle
+annotateSubjectLists ss = vsep (map annotateSubjectList ss)
