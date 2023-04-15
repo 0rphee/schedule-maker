@@ -1,0 +1,132 @@
+- name: OOP
+  class-id: "0001"
+  professor: Mathews
+  days:
+    - day: monday
+      start: 17:30
+      end: 19:00
+    - day: tuesday
+      start: 17:30
+      end: 19:00
+    - day: thursday
+      start: 17:30
+      end: 19:00
+
+- name: Person and Society
+  class-id: "0002"
+  professor: Cohen
+  days:
+    - day: monday
+      start: 7:00
+      end: 8:30
+    - day: friday
+      start: 7:00
+      end: 8:30
+
+- name: Integral Calculus
+  class-id: "0003"
+  professor: Rollins
+  days:
+    - day: monday
+      start: 08:30
+      end: 10:00
+    - day: wednesday
+      start: 08:30
+      end: 10:00
+    - day: friday
+      start: 08:30
+      end: 10:00
+
+- name: AP
+  class-id: "0004"
+  professor: Coleman
+  days:
+    - day: monday
+      start: 10:00
+      end: 11:30
+    - day: thursday
+      start: 10:00
+      end: 11:30
+    - day: friday
+      start: 10:00
+      end: 11:30
+
+- name: Lineal Algebra
+  class-id: "0005"
+  professor: Armstrong
+  days:
+    - day: monday
+      start: 12:00
+      end: 13:30
+    - day: wednesday
+      start: 12:00
+      end: 13:30
+    - day: friday
+      start: 11:30
+      end: 13:00
+
+- name: Commercialization
+  class-id: "0006"
+  professor: Rivers
+  days:
+    - day: tuesday
+      start: 10:00
+      end: 11:30
+    - day: wednesday
+      start: 10:30
+      end: 12:00
+
+- name: Leadership
+  class-id: "0007"
+  professor: Crawford
+  days:
+    - day: tuesday
+      start: 12:00
+      end: 13:00
+
+    - day: thursday
+      start: 12:30
+      end: 14:00
+
+
+- name: Integral Calculus
+  class-id: "0008"
+  professor: Key
+  days:
+    - day: monday
+      start: 14:30
+      end: 16:00
+    - day: thursday
+      start: 14:30
+      end: 16:00
+    - day: friday
+      start: 14:30
+      end: 16:00
+
+- name: AP
+  class-id: "0009"
+  professor: Woodard
+  days:
+    - day: monday
+      start: 11:30
+      end: 13:00
+    - day: tuesday
+      start: 14:30
+      end: 16:00
+    - day: wednesday
+      start: 12:00
+      end: 13:30
+
+- name: Lineal Algebra
+  class-id: "0010"
+  professor: Aguilar
+  days:
+    - day: monday
+      start: 13:00
+      end: 14:30
+    - day: tuesday
+      start: 08:30
+      end: 10:00
+    - day: wednesday
+      start: 08:30
+      end: 10:00

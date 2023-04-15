@@ -8,6 +8,8 @@ module Lib (program) where
 
 import Combinatorics                 ( tuples )
 
+import Control.Applicative           ( (<|>) )
+
 import Data.Aeson.Types              ( parseFail, prependFailure, typeMismatch )
 import Data.Bifunctor                ( Bifunctor (first) )
 import Data.Map.Strict               qualified as M
@@ -21,6 +23,7 @@ import Prettyprinter.Render.Terminal
 
 import System.Console.Terminal.Size  ( Window (Window), size )
 import System.IO                     ( stdout )
+
 data Class
   = MondayClass { classInterval :: Interval
                 }
@@ -135,6 +138,7 @@ instance Show Interval where
 
 newtype IDandSubj
   = IDandSubj (T.Text, Subject)
+
 data Subject
   = MkSubject { subjName      :: T.Text
               , subjProfessor :: T.Text
@@ -207,8 +211,8 @@ instance FromJSON Time where
 
 instance FromJSON Interval where
   parseJSON (Object obj) = do
-    beginningTime <- obj .: "inicio"
-    endTime       <- obj .: "final"
+    beginningTime <- obj .: "inicio" <|> obj .: "start"
+    endTime       <- obj .: "final"  <|> obj .: "end"
     case createInterval beginningTime endTime of
       Nothing              ->
                   parseFail $ "invalid Interval, class ends: "
@@ -222,14 +226,23 @@ instance FromJSON Interval where
 
 instance {-# OVERLAPPING #-} FromJSON Class where
   parseJSON (Object obj) = prependFailure "parsing Class failed, " $ do
-    day      <- obj .: "dia"
+    day      <- obj .: "dia" <|> obj .: "day"
     interval <- prependFailure (T.unpack $ "in day '" <> day <> "', ") $ parseJSON (Object obj)
     case day of
       "lunes"     -> pure $ MondayClass interval
+      "monday"    -> pure $ MondayClass interval
       "martes"    -> pure $ TuesdayClass interval
+      "tuesday"   -> pure $ TuesdayClass interval
       "miercoles" -> pure $ WednesdayClass interval
+      "wednesday" -> pure $ WednesdayClass interval
       "jueves"    -> pure $ ThursdayClass interval
+      "thursday"  -> pure $ ThursdayClass interval
       "viernes"   -> pure $ FridayClass interval
+      "friday"    -> pure $ FridayClass interval
+      "sabado"    -> pure $ SaturdayClass interval
+      "saturday"  -> pure $ SaturdayClass interval
+      "domingo"   -> pure $ SundayClass interval
+      "sunday"    -> pure $ SundayClass interval
       _           -> parseFail $ "Invalid Class day: " <> T.unpack day
   parseJSON invalid =
         prependFailure "parsing Interval failed, "
@@ -237,15 +250,15 @@ instance {-# OVERLAPPING #-} FromJSON Class where
 
 instance  {-# OVERLAPPING #-} FromJSON IDandSubj where
   parseJSON (Object obj) = prependFailure "parsing Subject failed, " $ do
-    name      <- obj .: "nombre"
+    name      <- obj .: "nombre" <|> obj .: "name"
     let errorInClassName = "in class '" <> T.unpack name <> "', "
-    classId   <- prependFailure errorInClassName $ obj .: "id-clase"
+    classId   <- prependFailure errorInClassName $ obj .: "id-clase" <|> obj .: "class-id"
     let errorInClassId = errorInClassName
                       <> "with ID '" <> T.unpack classId <> "', "
-    professor <- prependFailure errorInClassId $ obj .: "profesor"
+    professor <- prependFailure errorInClassId $ obj .: "profesor" <|> obj .: "professor"
     let errorInClassProfessor = errorInClassId
                               <> ("with Professor: '" <> T.unpack professor <> "', ")
-    classes <- prependFailure errorInClassProfessor $ obj .: "dias"
+    classes <- prependFailure errorInClassProfessor $ obj .: "dias" <|> obj .: "days"
     pure $ IDandSubj (classId, MkSubject name professor classes)
 
   parseJSON invalid =
