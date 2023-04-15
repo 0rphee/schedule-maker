@@ -28,6 +28,7 @@ dependencies:
 - containers
 - prettyprinter
 - prettyprinter-ansi-terminal
+- terminal-size
 
 ghc-options:
 - -Wall
