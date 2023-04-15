@@ -393,12 +393,6 @@ instance Pretty Error where
       indent 2 (vsep [pretty subj1, pretty subj2])
 
 
--- annotateInterval :: Interval -> Doc AnsiStyle
--- annotateInterval  = annotate
-
--- annotateClass :: Class -> Doc AnsiStyle
--- annotateClass c = annotate (color Cyan <> bold) (annotateClass' c)
-
 annotateClass :: Class -> Doc AnsiStyle
 annotateClass (MondayClass interval)    = annotate (color Cyan <> bold) "Monday:   " <+> pretty interval
 annotateClass (TuesdayClass interval)   = annotate (color Cyan <> bold) "Tuesday:  " <+> pretty interval
@@ -410,8 +404,8 @@ annotateClass (SundayClass interval)    = annotate (color Cyan <> bold) "Sunday:
 
 annotateSubject :: Subject -> Doc AnsiStyle
 annotateSubject (MkSubject name professor classes)
-  = annotate (color Blue <> bold) "Subject:   " <> pretty name <> line <>
-    annotate (color Blue <> bold) "Professor: " <> pretty professor <> line <>
+  = annotate (color Blue <> bold) "Subject:  " <+> pretty name <> line <>
+    annotate (color Blue <> bold) "Professor:" <+> pretty professor <> line <>
     annotate (color Blue <> bold) "Classes:" <> line <>
     indent 2 (vsep (map annotateClass classes))
 
@@ -423,11 +417,20 @@ annotateError (RepeatedSubjId subjId subj1 subj2) =
   annotate (color Red <> bold) "Repeated subject ID: " <> pretty subjId <> line <>
   indent 2 (vsep [pretty subj1, pretty subj2])
 
+
+separateWith :: AnsiStyle -> Char -> Int -> Doc AnsiStyle -> Doc AnsiStyle -> Doc AnsiStyle
+separateWith lineStyle lineChar numOfLines l r = l <> emptyLines  <> separatingLines <> emptyLines <> r
+  where separatingLines = vsep $ replicate numOfLines $ annotate lineStyle $ pretty (replicate 30 lineChar)
+        emptyLines = if numOfLines >= 2
+                     then line <> line
+                     else line
+
+
 annotateErrors :: [Error] -> Doc AnsiStyle
-annotateErrors es = annotate (color Red <> bold) (concatWith (\l r -> l <> line <> "----" <> line <> r) (map annotateError es))
+annotateErrors es = annotate (color Red <> bold) (concatWith (separateWith bold '-' 1) (map annotateError es))
 
 annotateSubjectList :: [Subject] -> Doc AnsiStyle
-annotateSubjectList ss = concatWith (\l r -> l <> line <> fill 15 "-" <> line <> r) (map annotateSubject ss)
+annotateSubjectList ss = concatWith (separateWith (colorDull Yellow) '-' 1) (map annotateSubject ss)
 
 annotateSubjectLists :: [[Subject]] -> Doc AnsiStyle
-annotateSubjectLists ss = vsep (map annotateSubjectList ss)
+annotateSubjectLists ss = concatWith (separateWith (color Magenta <> bold) '=' 2) (map annotateSubjectList ss) <> line
