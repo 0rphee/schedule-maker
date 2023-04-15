@@ -131,6 +131,8 @@ data Interval
 instance Show Interval where
   show (MkInterval beginning end) = show beginning <> "-" <> show end
 
+newtype IDandSubj
+  = IDandSubj (T.Text, Subject)
 data Subject
   = MkSubject { subjName      :: T.Text
               , subjProfessor :: T.Text
