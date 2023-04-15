@@ -19,6 +19,8 @@ import Data.Yaml                     ( FromJSON (..), ParseException,
 import Prettyprinter
 import Prettyprinter.Render.Terminal
 
+import System.Console.Terminal.Size  ( Window (Window), size )
+import System.IO                     ( stdout )
 data Class
   = MondayClass { classInterval :: Interval
                 }
