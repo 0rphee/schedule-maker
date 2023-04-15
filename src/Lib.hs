@@ -288,7 +288,7 @@ genPossibleClassCombinations :: (Applicative f)
 genPossibleClassCombinations = sequenceA . M.elems
 -- genPossibleClassCombinations = map M.elems . sequenceA
 
-validate :: M.Map T.Text Subject -> [[T.Text]] -> ([Error], [[Subject]]) -- (errors, and successes)
+validate :: M.Map T.Text Subject -> [[T.Text]] -> ([Error], [[IDandSubj]]) -- (errors, and successes)
 validate allSubjectsMp = foldl foldingF ([],[])
   where validateSubj :: [T.Text] -> Maybe Error
         validateSubj combinations = validateClasses' asClasses -- combinations: ["1243", "1445", ..]
@@ -306,11 +306,11 @@ validate allSubjectsMp = foldl foldingF ([],[])
                                                            else Nothing
                         f err _ = err
 
-        foldingF :: ([Error], [[Subject]]) -> [T.Text] -> ([Error], [[Subject]])
+        foldingF :: ([Error], [[IDandSubj]]) -> [T.Text] -> ([Error], [[IDandSubj]])
         foldingF (errs, validSchedules) xs
           = case validateSubj xs of
               Just err -> (err:errs, validSchedules)
-              Nothing  -> let validCombination = fmap (allSubjectsMp M.!) xs
+              Nothing  -> let validCombination = fmap (\ txtid -> IDandSubj (txtid, allSubjectsMp M.! txtid)) xs
                            in (errs, validCombination :validSchedules)
 
 
@@ -321,7 +321,7 @@ program = do
     Left err     -> putStrLn $ prettyPrintParseException err
     Right result -> putDoc . either annotateErrors annotateSubjectLists $ collectValidationResults result
 
-collectValidationResults :: [IDandSubj] -> Either [Error] [[Subject]]
+collectValidationResults :: [IDandSubj] -> Either [Error] [[IDandSubj]]
 collectValidationResults xs = do
   (materias, db) <- first (:[]) $ getMapsFromValues xs
   let allSubjectCombinations = genPossibleClassCombinations materias
@@ -402,12 +402,14 @@ annotateClass (FridayClass interval)    = annotate (color Cyan <> bold) "Friday:
 annotateClass (SaturdayClass interval)  = annotate (color Cyan <> bold) "Saturday: " <+> pretty interval
 annotateClass (SundayClass interval)    = annotate (color Cyan <> bold) "Sunday:   " <+> pretty interval
 
-annotateSubject :: Subject -> Doc AnsiStyle
-annotateSubject (MkSubject name professor classes)
-  = annotate (color Blue <> bold) "Subject:  " <+> pretty name <> line <>
-    annotate (color Blue <> bold) "Professor:" <+> pretty professor <> line <>
-    annotate (color Blue <> bold) "Classes:" <> line <>
+annotateSubject :: IDandSubj -> Doc AnsiStyle
+annotateSubject (IDandSubj (txtid, MkSubject name professor classes))
+  = annotateFieldName "Class ID: " <+> pretty txtid <> line <>
+    annotateFieldName "Subject:  " <+> pretty name <> line <>
+    annotateFieldName "Professor:" <+> pretty professor <> line <>
+    annotateFieldName "Classes:" <> line <>
     indent 2 (vsep (map annotateClass classes))
+  where annotateFieldName = annotate (color Blue <> bold)
 
 annotateError :: Error -> Doc AnsiStyle
 annotateError (OverlappingClasses (subj1, class1) (subj2, class2)) =
@@ -429,8 +431,8 @@ separateWith lineStyle lineChar numOfLines l r = l <> emptyLines  <> separatingL
 annotateErrors :: [Error] -> Doc AnsiStyle
 annotateErrors es = annotate (color Red <> bold) (concatWith (separateWith bold '-' 1) (map annotateError es))
 
-annotateSubjectList :: [Subject] -> Doc AnsiStyle
+annotateSubjectList :: [IDandSubj] -> Doc AnsiStyle
 annotateSubjectList ss = concatWith (separateWith (colorDull Yellow) '-' 1) (map annotateSubject ss)
 
-annotateSubjectLists :: [[Subject]] -> Doc AnsiStyle
+annotateSubjectLists :: [[IDandSubj]] -> Doc AnsiStyle
 annotateSubjectLists ss = concatWith (separateWith (color Magenta <> bold) '=' 2) (map annotateSubjectList ss) <> line
