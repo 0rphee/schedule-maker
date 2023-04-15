@@ -231,7 +231,7 @@ instance {-# OVERLAPPING #-} FromJSON Class where
         prependFailure "parsing Interval failed, "
             (typeMismatch "Object" invalid)
 
-instance  {-# OVERLAPPING #-} FromJSON (T.Text, Subject) where
+instance  {-# OVERLAPPING #-} FromJSON IDandSubj where
   parseJSON (Object obj) = prependFailure "parsing Subject failed, " $ do
     name      <- obj .: "nombre"
     let errorInClassName = "in class '" <> T.unpack name <> "', "
@@ -242,7 +242,7 @@ instance  {-# OVERLAPPING #-} FromJSON (T.Text, Subject) where
     let errorInClassProfessor = errorInClassId
                               <> ("with Professor: '" <> T.unpack professor <> "', ")
     classes <- prependFailure errorInClassProfessor $ obj .: "dias"
-    pure (classId, MkSubject name professor classes)
+    pure $ IDandSubj (classId, MkSubject name professor classes)
 
   parseJSON invalid =
         prependFailure "parsing Interval failed, "
@@ -268,11 +268,11 @@ classesOverlap class1 class2
       (SaturdayClass inter1, SaturdayClass inter2)   -> intervalsOverlap inter1 inter2
       _                                                  -> False
 
-getMapsFromValues :: [(T.Text, Subject)] -> Either Error (M.Map T.Text [T.Text], M.Map T.Text Subject)
+getMapsFromValues :: [IDandSubj] -> Either Error (M.Map T.Text [T.Text], M.Map T.Text Subject)
 getMapsFromValues values = go values (Right (M.empty, M.empty))
-  where go :: [(T.Text, Subject)] -> Either Error (M.Map T.Text [T.Text], M.Map T.Text Subject) -> Either Error (M.Map T.Text [T.Text], M.Map T.Text Subject)
+  where go :: [IDandSubj] -> Either Error (M.Map T.Text [T.Text], M.Map T.Text Subject) -> Either Error (M.Map T.Text [T.Text], M.Map T.Text Subject)
         go [] result = result
-        go ((id', subj):xs) res
+        go (IDandSubj (id', subj):xs) res
           = do
           (keyMap, valMap) <- res
           case M.lookup id' valMap of
@@ -316,12 +316,12 @@ validate allSubjectsMp = foldl foldingF ([],[])
 
 program :: IO ()
 program = do
-  (res :: Either ParseException [(T.Text, Subject)]) <- decodeFileEither "test.yaml"
+  (res :: Either ParseException [IDandSubj]) <- decodeFileEither "test.yaml"
   case res of
     Left err     -> putStrLn $ prettyPrintParseException err
     Right result -> putDoc . either annotateErrors annotateSubjectLists $ collectValidationResults result
 
-collectValidationResults :: [(T.Text, Subject)] -> Either [Error] [[Subject]]
+collectValidationResults :: [IDandSubj] -> Either [Error] [[Subject]]
 collectValidationResults xs = do
   (materias, db) <- first (:[]) $ getMapsFromValues xs
   let allSubjectCombinations = genPossibleClassCombinations materias
