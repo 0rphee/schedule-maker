@@ -318,10 +318,15 @@ validate allSubjectsMp = foldl foldingF ([],[])
 
 program :: IO ()
 program = do
-  (res :: Either ParseException [IDandSubj]) <- decodeFileEither "test.yaml"
+  (res :: Either ParseException [IDandSubj]) <- decodeFileEither "test-english.yaml"
+  sz <- size
+  let layout = (\s -> LayoutOptions (AvailablePerLine s 1) )
+             $ case sz of
+                 Nothing           -> 80
+                 Just (Window _ w) -> w
   case res of
     Left err     -> putStrLn $ prettyPrintParseException err
-    Right result -> putDoc . either annotateErrors annotateSubjectLists $ collectValidationResults result
+    Right result -> renderIO stdout $ layoutSmart layout $ either annotateErrors annotateSubjectLists $ collectValidationResults result
 
 collectValidationResults :: [IDandSubj] -> Either [Error] [[IDandSubj]]
 collectValidationResults xs = do
@@ -406,11 +411,11 @@ annotateClass (SundayClass interval)    = annotate (color Cyan <> bold) "Sunday:
 
 annotateSubject :: IDandSubj -> Doc AnsiStyle
 annotateSubject (IDandSubj (txtid, MkSubject name professor classes))
-  = annotateFieldName "Class ID: " <+> pretty txtid <> line <>
-    annotateFieldName "Subject:  " <+> pretty name <> line <>
-    annotateFieldName "Professor:" <+> pretty professor <> line <>
-    annotateFieldName "Classes:" <> line <>
-    indent 2 (vsep (map annotateClass classes))
+  = vsep [annotateFieldName "Class ID: " <+> pretty txtid
+         , annotateFieldName "Subject:  " <+> pretty name
+         , annotateFieldName "Professor:" <+> pretty professor
+         , annotateFieldName "Classes:"
+         , indent 2 (vsep (map annotateClass classes))]
   where annotateFieldName = annotate (color Blue <> bold)
 
 annotateError :: Error -> Doc AnsiStyle
@@ -435,6 +440,7 @@ annotateErrors es = annotate (color Red <> bold) (concatWith (separateWith bold 
 
 annotateSubjectList :: [IDandSubj] -> Doc AnsiStyle
 annotateSubjectList ss = concatWith (separateWith (colorDull Yellow) '-' 1) (map annotateSubject ss)
+-- annotateSubjectList ss = fillSep (map annotateSubject ss)
 
 annotateSubjectLists :: [[IDandSubj]] -> Doc AnsiStyle
 annotateSubjectLists ss = concatWith (separateWith (color Magenta <> bold) '=' 2) (map annotateSubjectList ss) <> line
