@@ -2,6 +2,7 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections       #-}
+{-# OPTIONS_GHC -Wno-unused-top-binds #-}
 
 module Lib (program) where
 
@@ -276,8 +277,8 @@ getMapsFromValues values = go values (Right (M.empty, M.empty))
           (keyMap, valMap) <- res
           case M.lookup id' valMap of
             Just repeatedSubj -> Left $ RepeatedSubjId id' subj repeatedSubj
-            Nothing -> go xs (Right (M.alter alteringFunc subjName keyMap , M.insert id' subj valMap))
-          where (MkSubject subjName _ _) = subj
+            Nothing -> go xs (Right (M.alter alteringFunc sName keyMap , M.insert id' subj valMap))
+          where (MkSubject sName _ _) = subj
                 alteringFunc :: Maybe [T.Text] -> Maybe [T.Text]
                 alteringFunc (Just valueInside) = Just (id':valueInside)
                 alteringFunc Nothing            = Just [id']
