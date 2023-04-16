@@ -334,9 +334,9 @@ validate allSubjectsMp = foldl foldingF ([],[])
 program :: IO ()
 program = do
   (res :: Either ParseException [IDandSubj]) <- decodeFileEither "test-english.yaml"
-  sz <- size
+  terminalSize <- size
   let layout = (\s -> LayoutOptions (AvailablePerLine s 1) )
-             $ case sz of
+             $ case terminalSize of
                  Nothing           -> 80
                  Just (Window _ w) -> w
   case res of
