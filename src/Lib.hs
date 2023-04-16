@@ -224,7 +224,7 @@ instance FromJSON Interval where
         prependFailure "parsing Interval failed, "
             (typeMismatch "Object" invalid)
 
-instance {-# OVERLAPPING #-} FromJSON Class where
+instance FromJSON Class where
   parseJSON (Object obj) = prependFailure "parsing Class failed, " $ do
     day      <- obj .: "dia" <|> obj .: "day"
     interval <- prependFailure (T.unpack $ "in day '" <> day <> "', ") $ parseJSON (Object obj)
@@ -248,7 +248,7 @@ instance {-# OVERLAPPING #-} FromJSON Class where
         prependFailure "parsing Interval failed, "
             (typeMismatch "Object" invalid)
 
-instance  {-# OVERLAPPING #-} FromJSON IDandSubj where
+instance FromJSON IDandSubj where
   parseJSON (Object obj) = prependFailure "parsing Subject failed, " $ do
     name      <- obj .: "nombre" <|> obj .: "name"
     let errorInClassName = "in class '" <> T.unpack name <> "', "
