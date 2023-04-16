@@ -29,6 +29,7 @@ dependencies:
 - prettyprinter
 - prettyprinter-ansi-terminal
 - terminal-size
+- optparse-applicative
 
 ghc-options:
 - -Wall
