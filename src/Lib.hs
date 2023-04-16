@@ -8,8 +8,6 @@ module Lib (program) where
 
 import Combinatorics                 ( tuples )
 
-import Control.Applicative           ( (<|>) )
-
 import Data.Aeson.Types              ( parseFail, prependFailure, typeMismatch )
 import Data.Bifunctor                ( Bifunctor (first) )
 import Data.Map.Strict               qualified as M
@@ -17,6 +15,8 @@ import Data.Text                     qualified as T
 import Data.Yaml                     ( FromJSON (..), ParseException,
                                        Value (..), decodeFileEither,
                                        prettyPrintParseException, (.:) )
+
+import Options.Applicative
 
 import Prettyprinter
 import Prettyprinter.Render.Terminal
@@ -459,3 +459,29 @@ annotateSubjectList ss = concatWith (separateWith (colorDull Yellow) '-' 1) (map
 
 annotateSubjectLists :: [[IDandSubj]] -> Doc AnsiStyle
 annotateSubjectLists ss = concatWith (separateWith (color Magenta <> bold) '=' 2) (map annotateSubjectList ss) <> line
+
+
+-- parsing options
+newtype Options
+  = Options LanguageMode
+
+data LanguageMode
+  = English
+  | Spanish
+
+
+options :: ParserInfo Options
+options = Options <$> info (language <**> helper)
+  (  fullDesc
+  <> header "schedule-maker - A tool to help you build your schedule."
+  <> footer "For more info visit here: https://codeberg.org/0rphee/brainhuck"
+  )
+
+language :: Parser LanguageMode
+language = flag English Spanish
+  (  long "es"
+  <> help "Parses yaml file with in spanish, instead of english"
+  )
+
+
+
