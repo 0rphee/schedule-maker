@@ -4,7 +4,11 @@
 {-# LANGUAGE TupleSections       #-}
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 
-module Lib (program) where
+module Lib
+  ( LanguageMode (..)
+  , Options (..)
+  , program
+  ) where
 
 import Combinatorics                 ( tuples )
 
@@ -16,13 +20,43 @@ import Data.Yaml                     ( FromJSON (..), ParseException,
                                        Value (..), decodeFileEither,
                                        prettyPrintParseException, (.:) )
 
-import Options.Applicative
+import Options.Applicative           ( Alternative ((<|>)), Parser, ParserInfo,
+                                       flag, footer, fullDesc, header, help,
+                                       helper, info, long, (<**>) )
 
-import Prettyprinter
-import Prettyprinter.Render.Terminal
+import Prettyprinter                 ( Doc, LayoutOptions (LayoutOptions),
+                                       PageWidth (AvailablePerLine),
+                                       Pretty (pretty), annotate, concatWith,
+                                       indent, layoutSmart, line, vsep, (<+>) )
+import Prettyprinter.Render.Terminal ( AnsiStyle,
+                                       Color (Blue, Cyan, Magenta, Red, Yellow),
+                                       bold, color, colorDull, renderIO )
 
 import System.Console.Terminal.Size  ( Window (Window), size )
 import System.IO                     ( stdout )
+
+-- parsing and language options
+newtype Options
+  = Options LanguageMode
+
+data LanguageMode
+  = English
+  | Spanish
+
+
+options :: ParserInfo Options
+options = Options <$> info (language <**> helper)
+  (  fullDesc
+  <> header "schedule-maker - A tool to help you build your schedule."
+  <> footer "For more info visit here: https://codeberg.org/0rphee/brainhuck"
+  )
+
+language :: Parser LanguageMode
+language = flag English Spanish
+  (  long "es"
+  <> help "Parses yaml file with in spanish, instead of english"
+  )
+
 
 data Class
   = MondayClass { classInterval :: Interval
@@ -39,18 +73,6 @@ data Class
                   }
   | SundayClass { classInterval :: Interval
                 }
-
-instance Show Class where
-  show x
-    = case x of
-        MondayClass    inter -> "Monday: " <> show inter
-        TuesdayClass   inter -> "Tuesday: " <> show inter
-        WednesdayClass inter -> "Wednesday: " <> show inter
-        ThursdayClass  inter -> "Thursday: " <> show inter
-        FridayClass    inter -> "Friday: " <> show inter
-        SaturdayClass  inter -> "Saturday: " <> show inter
-        SundayClass    inter -> "Sunday: " <> show inter
-
 
 data Hour
   = H0
@@ -133,6 +155,12 @@ data Interval
                , intervalEndTime      :: Time
                }
 
+newtype JSONParseSpanish a
+  = ESparse a
+newtype JSONParseEnglish a
+  = ENparse a
+
+
 instance Show Interval where
   show (MkInterval beginning end) = show beginning <> "-" <> show end
 
@@ -153,12 +181,48 @@ instance Show Subject where
 data Error
   = OverlappingClasses (Subject, Class) (Subject, Class)
   | RepeatedSubjId T.Text Subject Subject
-  deriving (Show)
 
 createInterval :: Time -> Time -> Maybe Interval
 createInterval x y = if x < y
                      then Just $ MkInterval x y
                      else Nothing
+
+hourMap :: M.Map T.Text Hour
+hourMap = M.fromList [ ("1",  H1)
+                     , ("2",  H2)
+                     , ("3",  H3)
+                     , ("4",  H4)
+                     , ("5",  H5)
+                     , ("6",  H6)
+                     , ("7",  H7)
+                     , ("8",  H8)
+                     , ("9",  H9)
+                     , ("00", H0)
+                     , ("00", H1)
+                     , ("02", H2)
+                     , ("03", H3)
+                     , ("04", H4)
+                     , ("05", H5)
+                     , ("06", H6)
+                     , ("07", H7)
+                     , ("08", H8)
+                     , ("09", H9)
+                     , ("10", H10)
+                     , ("11", H11)
+                     , ("12", H12)
+                     , ("13", H13)
+                     , ("14", H14)
+                     , ("15", H15)
+                     , ("16", H16)
+                     , ("17", H17)
+                     , ("18", H18)
+                     , ("19", H19)
+                     , ("20", H20)
+                     , ("21", H21)
+                     , ("22", H22)
+                     , ("23", H23)
+                     ]
+
 instance FromJSON Time where
   parseJSON (String str)
      = prependFailure "parsing Time failed, " $ case res of
@@ -166,40 +230,8 @@ instance FromJSON Time where
        []    -> parseFail "inexistent hour for class"
        _     -> parseFail "unexpected ':'. More than 1."
     where res =  T.splitOn ":" str
-          h head' = case head' of
-                      "00" -> pure H0
-                      "01" -> pure H1
-                      "02" -> pure H2
-                      "03" -> pure H3
-                      "04" -> pure H4
-                      "05" -> pure H5
-                      "06" -> pure H6
-                      "07" -> pure H7
-                      "08" -> pure H8
-                      "09" -> pure H9
-                      "10" -> pure H10
-                      "11" -> pure H11
-                      "12" -> pure H12
-                      "13" -> pure H13
-                      "14" -> pure H14
-                      "15" -> pure H15
-                      "16" -> pure H16
-                      "17" -> pure H17
-                      "18" -> pure H18
-                      "19" -> pure H19
-                      "20" -> pure H20
-                      "21" -> pure H21
-                      "22" -> pure H22
-                      "23" -> pure H23
-                      "1"  -> pure H1
-                      "2"  -> pure H2
-                      "3"  -> pure H3
-                      "4"  -> pure H4
-                      "5"  -> pure H5
-                      "6"  -> pure H6
-                      "7"  -> pure H7
-                      "8"  -> pure H8
-                      "9"  -> pure H9
+          h head' = case M.lookup head' hourMap of
+                      Just hour -> pure hour
                       _    -> parseFail $ T.unpack $ "Invalid hour: " <> head'
           t tail' = case tail' of
                       "00" -> pure ZeroMinutes
@@ -209,60 +241,110 @@ instance FromJSON Time where
         prependFailure "parsing Time failed, "
             (typeMismatch "String" invalid)
 
-instance FromJSON Interval where
+instance FromJSON (JSONParseSpanish Interval) where
   parseJSON (Object obj) = do
-    beginningTime <- obj .: "inicio" <|> obj .: "start"
-    endTime       <- obj .: "final"  <|> obj .: "end"
+    beginningTime <- obj .: "inicio"
+    endTime       <- obj .: "final"
+    case createInterval beginningTime endTime of
+      Nothing              ->
+                  parseFail $ "Intervalo inválido, clase termina: "
+                            <> show beginningTime
+                            <> ", antes de que comience: "
+                            <> show endTime
+      Just validInterval -> pure $ ESparse validInterval
+  parseJSON invalid =
+        prependFailure "lectura del Intervalo fallida, "
+            (typeMismatch "Object" invalid)
+
+instance FromJSON (JSONParseEnglish Interval) where
+  parseJSON (Object obj) = do
+    beginningTime <- obj .: "start"
+    endTime       <- obj .: "end"
     case createInterval beginningTime endTime of
       Nothing              ->
                   parseFail $ "invalid Interval, class ends: "
                             <> show beginningTime
                             <> ", before it begins: "
                             <> show endTime
-      Just validInterval -> pure validInterval
+      Just validInterval -> pure $ ENparse validInterval
   parseJSON invalid =
         prependFailure "parsing Interval failed, "
             (typeMismatch "Object" invalid)
 
-instance FromJSON Class where
+instance FromJSON (JSONParseEnglish Class) where
   parseJSON (Object obj) = prependFailure "parsing Class failed, " $ do
-    day      <- obj .: "dia" <|> obj .: "day"
+    day      <- obj .: "day"
     interval <- prependFailure (T.unpack $ "in day '" <> day <> "', ") $ parseJSON (Object obj)
-    case day of
-      "lunes"     -> pure $ MondayClass interval
-      "monday"    -> pure $ MondayClass interval
-      "martes"    -> pure $ TuesdayClass interval
-      "tuesday"   -> pure $ TuesdayClass interval
-      "miercoles" -> pure $ WednesdayClass interval
-      "wednesday" -> pure $ WednesdayClass interval
-      "jueves"    -> pure $ ThursdayClass interval
-      "thursday"  -> pure $ ThursdayClass interval
-      "viernes"   -> pure $ FridayClass interval
-      "friday"    -> pure $ FridayClass interval
-      "sabado"    -> pure $ SaturdayClass interval
-      "saturday"  -> pure $ SaturdayClass interval
-      "domingo"   -> pure $ SundayClass interval
-      "sunday"    -> pure $ SundayClass interval
-      _           -> parseFail $ "Invalid Class day: " <> T.unpack day
+    case M.lookup day dayMapEnglish of
+      Just constructor -> pure . ENparse $ constructor interval
+      _                -> parseFail $ T.unpack $ "Invalid Class day: " <> day
   parseJSON invalid =
         prependFailure "parsing Interval failed, "
             (typeMismatch "Object" invalid)
 
-instance FromJSON IDandSubj where
+dayMapSpanish :: M.Map T.Text (Interval -> Class)
+dayMapSpanish = M.fromList [ ("lunes", MondayClass)
+                           , ("martes", TuesdayClass)
+                           , ("miercoles", WednesdayClass)
+                           , ("jueves", ThursdayClass)
+                           , ("viernes", FridayClass)
+                           , ("sabado", SaturdayClass)
+                           , ("domingo", SundayClass)
+                           ]
+
+dayMapEnglish :: M.Map T.Text (Interval -> Class)
+dayMapEnglish = M.fromList [ ("monday", MondayClass)
+                           , ("tuesday", TuesdayClass)
+                           , ("wednesday", WednesdayClass)
+                           , ("thursday", ThursdayClass)
+                           , ("friday", FridayClass)
+                           , ("saturday", SaturdayClass)
+                           , ("sunday", SundayClass)
+                           ]
+
+instance FromJSON (JSONParseSpanish Class) where
+  parseJSON (Object obj) = prependFailure "lectura de Clase fallida, " $ do
+    day      <- obj .: "dia" <|> obj .: "día"
+    interval <- prependFailure (T.unpack $ "en día '" <> day <> "', ") $ parseJSON (Object obj)
+    case M.lookup day dayMapSpanish of
+      Just constructor -> pure . ESparse $ constructor interval
+      _                -> parseFail $ T.unpack $ "Día de clase inválido: " <> day
+  parseJSON invalid =
+        prependFailure "parsing Interval failed, "
+            (typeMismatch "Object" invalid)
+
+instance FromJSON (JSONParseEnglish IDandSubj) where
   parseJSON (Object obj) = prependFailure "parsing Subject failed, " $ do
-    name      <- obj .: "nombre" <|> obj .: "name"
+    name      <- obj .: "nombre"
     let errorInClassName = "in class '" <> T.unpack name <> "', "
-    classId   <- prependFailure errorInClassName $ obj .: "id-clase" <|> obj .: "class-id"
+    classId   <- prependFailure errorInClassName $ obj .: "class-id"
     let errorInClassId = errorInClassName
                       <> "with ID '" <> T.unpack classId <> "', "
-    professor <- prependFailure errorInClassId $ obj .: "profesor" <|> obj .: "professor"
+    professor <- prependFailure errorInClassId $ obj .: "professor"
     let errorInClassProfessor = errorInClassId
                               <> ("with Professor: '" <> T.unpack professor <> "', ")
-    classes <- prependFailure errorInClassProfessor $ obj .: "dias" <|> obj .: "days"
-    pure $ IDandSubj (classId, MkSubject name professor classes)
+    classes <- prependFailure errorInClassProfessor $ obj .: "days"
+    pure . ENparse $ IDandSubj (classId, MkSubject name professor classes)
 
   parseJSON invalid =
         prependFailure "parsing Interval failed, "
+            (typeMismatch "Object" invalid)
+
+instance FromJSON (JSONParseSpanish IDandSubj) where
+  parseJSON (Object obj) = prependFailure "lectura de Materia fallida, " $ do
+    name      <- obj .: "nombre"
+    let errorInClassName = "en clase'" <> T.unpack name <> "', "
+    classId   <- prependFailure errorInClassName $ obj .: "id-clase"
+    let errorInClassId = errorInClassName
+                      <> "con ID '" <> T.unpack classId <> "', "
+    professor <- prependFailure errorInClassId $ obj .: "profesor"
+    let errorInClassProfessor = errorInClassId
+                              <> ("con Profesor: '" <> T.unpack professor <> "', ")
+    classes <- prependFailure errorInClassProfessor $ obj .: "dias" <|> obj .: "días"
+    pure . ESparse $ IDandSubj (classId, MkSubject name professor classes)
+
+  parseJSON invalid =
+        prependFailure "lectura de Intervalo fallida, "
             (typeMismatch "Object" invalid)
 
 intervalsOverlap :: Interval -> Interval -> Bool
@@ -333,7 +415,7 @@ validate allSubjectsMp = foldl foldingF ([],[])
 
 program :: IO ()
 program = do
-  (res :: Either ParseException [IDandSubj]) <- decodeFileEither "test-english.yaml"
+  (res :: Either ParseException [IDandSubj]) <- decodeFileEither "test-english.yaml" -- TODO: get file from arguments
   terminalSize <- size
   let layout = (\s -> LayoutOptions (AvailablePerLine s 1) )
              $ case terminalSize of
@@ -354,14 +436,24 @@ collectValidationResults xs = do
 
 -- pretty print
 
-instance Pretty Class where
-  pretty (MondayClass interval)    = "Monday:   " <+> pretty interval
-  pretty (TuesdayClass interval)   = "Tuesday:  " <+> pretty interval
-  pretty (WednesdayClass interval) = "Wednesday:" <+> pretty interval
-  pretty (ThursdayClass interval)  = "Thursday: " <+> pretty interval
-  pretty (FridayClass interval)    = "Friday:   " <+> pretty interval
-  pretty (SaturdayClass interval)  = "Saturday: " <+> pretty interval
-  pretty (SundayClass interval)    = "Sunday:   " <+> pretty interval
+-- maybe this isn't used
+instance Pretty (JSONParseEnglish Class) where
+  pretty (ENparse (MondayClass interval))    = "Monday:   " <+> pretty interval
+  pretty (ENparse (TuesdayClass interval))   = "Tuesday:  " <+> pretty interval
+  pretty (ENparse (WednesdayClass interval)) = "Wednesday:" <+> pretty interval
+  pretty (ENparse (ThursdayClass interval))  = "Thursday: " <+> pretty interval
+  pretty (ENparse (FridayClass interval))    = "Friday:   " <+> pretty interval
+  pretty (ENparse (SaturdayClass interval))  = "Saturday: " <+> pretty interval
+  pretty (ENparse (SundayClass interval))    = "Sunday:   " <+> pretty interval
+
+instance Pretty (JSONParseSpanish Class) where
+  pretty (ESparse (MondayClass interval))    = "Lunes:    " <+> pretty interval
+  pretty (ESparse (TuesdayClass interval))   = "Martes:   " <+> pretty interval
+  pretty (ESparse (WednesdayClass interval)) = "Miércoles:" <+> pretty interval
+  pretty (ESparse (ThursdayClass interval))  = "Jueves:   " <+> pretty interval
+  pretty (ESparse (FridayClass interval))    = "Viernes:  " <+> pretty interval
+  pretty (ESparse (SaturdayClass interval))  = "Sábados:  " <+> pretty interval
+  pretty (ESparse (SundayClass interval))    = "Domingo:  " <+> pretty interval
 
 instance Pretty Hour where
   pretty H0  = "00"
@@ -400,37 +492,73 @@ instance Pretty Time where
 instance Pretty Interval where
   pretty (MkInterval start end) = pretty start <+> "-" <+> pretty end
 
-instance Pretty Subject where
-  pretty (MkSubject name professor classes) = "Subject: " <> pretty name <> line <>
-                                              "Professor: " <> pretty professor <> line <>
-                                              "Classes:" <> line <>
-                                              indent 2 (vsep (map pretty classes))
+instance Pretty (JSONParseSpanish Subject) where
+  pretty (ESparse (MkSubject name professor classes))
+    = vsep [ "Materia: " <> pretty name
+           , "Profesor: " <> pretty professor
+           , "Clases:"
+           , indent 2 (vsep (map pretty classes))
+           ]
 
-instance Pretty Error where
-  pretty (OverlappingClasses (subj1, class1) (subj2, class2))
+instance Pretty (JSONParseEnglish Subject) where
+  pretty (ENparse (MkSubject name professor classes))
+    = vsep [ "Subject: " <> pretty name
+           , "Professor: " <> pretty professor
+           , "Classes:"
+           , indent 2 (vsep (map pretty classes))
+           ]
+
+instance Pretty (JSONParseEnglish Error) where
+  pretty (ENparse (OverlappingClasses (subj1, class1) (subj2, class2)))
     = "Overlapping classes:" <> line
     <> indent 2 (vsep [pretty subj1 <+> pretty class1, pretty subj2 <+> pretty class2])
-  pretty (RepeatedSubjId subjId subj1 subj2)
+  pretty (ENparse (RepeatedSubjId subjId subj1 subj2))
     = "Repeated subject ID: " <> pretty subjId <> line <>
       indent 2 (vsep [pretty subj1, pretty subj2])
 
+instance Pretty (JSONParseSpanish Error)where
+  pretty (ESparse (OverlappingClasses (subj1, class1) (subj2, class2)))
+    = "Clases sobrepuestas:" <> line
+    <> indent 2 (vsep [pretty subj1 <+> pretty class1, pretty subj2 <+> pretty class2])
+  pretty (ESparse (RepeatedSubjId subjId subj1 subj2))
+    = "ID repetido de Materia :" <+> pretty subjId <> line <>
+      indent 2 (vsep [pretty subj1, pretty subj2])
 
-annotateClass :: Class -> Doc AnsiStyle
-annotateClass (MondayClass interval)    = annotate (color Cyan <> bold) "Monday:   " <+> pretty interval
-annotateClass (TuesdayClass interval)   = annotate (color Cyan <> bold) "Tuesday:  " <+> pretty interval
-annotateClass (WednesdayClass interval) = annotate (color Cyan <> bold) "Wednesday:" <+> pretty interval
-annotateClass (ThursdayClass interval)  = annotate (color Cyan <> bold) "Thursday: " <+> pretty interval
-annotateClass (FridayClass interval)    = annotate (color Cyan <> bold) "Friday:   " <+> pretty interval
-annotateClass (SaturdayClass interval)  = annotate (color Cyan <> bold) "Saturday: " <+> pretty interval
-annotateClass (SundayClass interval)    = annotate (color Cyan <> bold) "Sunday:   " <+> pretty interval
 
-annotateSubject :: IDandSubj -> Doc AnsiStyle
-annotateSubject (IDandSubj (txtid, MkSubject name professor classes))
+annotateClassES :: Class -> Doc AnsiStyle
+annotateClassES (MondayClass interval)    = annotate (color Cyan <> bold) "Lunes:    " <+> pretty interval
+annotateClassES (TuesdayClass interval)   = annotate (color Cyan <> bold) "Martes:   " <+> pretty interval
+annotateClassES (WednesdayClass interval) = annotate (color Cyan <> bold) "Miércoles:" <+> pretty interval
+annotateClassES (ThursdayClass interval)  = annotate (color Cyan <> bold) "Jueves:   " <+> pretty interval
+annotateClassES (FridayClass interval)    = annotate (color Cyan <> bold) "Viernes:  " <+> pretty interval
+annotateClassES (SaturdayClass interval)  = annotate (color Cyan <> bold) "Sábado:   " <+> pretty interval
+annotateClassES (SundayClass interval)    = annotate (color Cyan <> bold) "Domingo:  " <+> pretty interval
+
+annotateClassEN :: Class -> Doc AnsiStyle
+annotateClassEN (MondayClass interval)    = annotate (color Cyan <> bold) "Monday:   " <+> pretty interval
+annotateClassEN (TuesdayClass interval)   = annotate (color Cyan <> bold) "Tuesday:  " <+> pretty interval
+annotateClassEN (WednesdayClass interval) = annotate (color Cyan <> bold) "Wednesday:" <+> pretty interval
+annotateClassEN (ThursdayClass interval)  = annotate (color Cyan <> bold) "Thursday: " <+> pretty interval
+annotateClassEN (FridayClass interval)    = annotate (color Cyan <> bold) "Friday:   " <+> pretty interval
+annotateClassEN (SaturdayClass interval)  = annotate (color Cyan <> bold) "Saturday: " <+> pretty interval
+annotateClassEN (SundayClass interval)    = annotate (color Cyan <> bold) "Sunday:   " <+> pretty interval
+
+annotateSubjectEN :: IDandSubj -> Doc AnsiStyle
+annotateSubjectEN (IDandSubj (txtid, MkSubject name professor classes))
   = vsep [annotateFieldName "Class ID: " <+> pretty txtid
          , annotateFieldName "Subject:  " <+> pretty name
          , annotateFieldName "Professor:" <+> pretty professor
          , annotateFieldName "Classes:"
-         , indent 2 (vsep (map annotateClass classes))]
+         , indent 2 (vsep (map annotateClassEN classes))]
+  where annotateFieldName = annotate (color Blue <> bold)
+
+annotateSubjectES :: IDandSubj -> Doc AnsiStyle
+annotateSubjectES (IDandSubj (txtid, MkSubject name professor classes))
+  = vsep [annotateFieldName "Class ID: " <+> pretty txtid
+         , annotateFieldName "Subject:  " <+> pretty name
+         , annotateFieldName "Professor:" <+> pretty professor
+         , annotateFieldName "Classes:"
+         , indent 2 (vsep (map annotateClassES classes))]
   where annotateFieldName = annotate (color Blue <> bold)
 
 annotateError :: Error -> Doc AnsiStyle
@@ -459,29 +587,5 @@ annotateSubjectList ss = concatWith (separateWith (colorDull Yellow) '-' 1) (map
 
 annotateSubjectLists :: [[IDandSubj]] -> Doc AnsiStyle
 annotateSubjectLists ss = concatWith (separateWith (color Magenta <> bold) '=' 2) (map annotateSubjectList ss) <> line
-
-
--- parsing options
-newtype Options
-  = Options LanguageMode
-
-data LanguageMode
-  = English
-  | Spanish
-
-
-options :: ParserInfo Options
-options = Options <$> info (language <**> helper)
-  (  fullDesc
-  <> header "schedule-maker - A tool to help you build your schedule."
-  <> footer "For more info visit here: https://codeberg.org/0rphee/brainhuck"
-  )
-
-language :: Parser LanguageMode
-language = flag English Spanish
-  (  long "es"
-  <> help "Parses yaml file with in spanish, instead of english"
-  )
-
 
 
