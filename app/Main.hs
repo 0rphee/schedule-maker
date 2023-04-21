@@ -1,7 +1,9 @@
 module Main (main) where
 
-import Lib ( program )
+import Lib ( Options (..), execParser, options, program )
 
 main :: IO ()
-main = program
+main = do
+  (Options (langMode, filePath)) <- execParser options
+  program langMode filePath
 

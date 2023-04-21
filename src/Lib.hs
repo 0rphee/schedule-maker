@@ -7,6 +7,8 @@
 module Lib
   ( LanguageMode (..)
   , Options (..)
+  , execParser
+  , options
   , program
   ) where
 
@@ -21,8 +23,9 @@ import Data.Yaml                     ( FromJSON (..), ParseException,
                                        prettyPrintParseException, (.:) )
 
 import Options.Applicative           ( Alternative ((<|>)), Parser, ParserInfo,
-                                       flag, footer, fullDesc, header, help,
-                                       helper, info, long, (<**>) )
+                                       action, execParser, flag, footer,
+                                       fullDesc, header, help, helper, info,
+                                       long, metavar, strArgument, (<**>) )
 
 import Prettyprinter                 ( Doc, LayoutOptions (LayoutOptions),
                                        PageWidth (AvailablePerLine),
@@ -37,24 +40,35 @@ import System.IO                     ( stdout )
 
 -- parsing and language options
 newtype Options
-  = Options LanguageMode
+  = Options (LanguageMode, FilePath)
 
 data LanguageMode
   = English
   | Spanish
 
-
 options :: ParserInfo Options
-options = Options <$> info (language <**> helper)
+options =  info (opts <**> helper)
   (  fullDesc
   <> header "schedule-maker - A tool to help you build your schedule."
   <> footer "For more info visit here: https://codeberg.org/0rphee/brainhuck"
   )
 
+opts :: Parser Options
+opts = curry Options <$> language <*> filePathOpts
+
+
 language :: Parser LanguageMode
 language = flag English Spanish
   (  long "es"
-  <> help "Parses yaml file with in spanish, instead of english"
+  <> help "Parses yaml file in spanish, instead of english"
+  )
+
+filePathOpts :: Parser FilePath
+filePathOpts = strArgument
+  (  metavar "FILENAME"
+  <> help "Input file"
+  <> action "directory"
+  <> action "file"
   )
 
 
