@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE ImplicitParams      #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections       #-}
@@ -72,6 +73,7 @@ filePathOpts = strArgument
   )
 
 
+
 data Class
   = MondayClass { classInterval :: Interval
                 }
@@ -87,6 +89,7 @@ data Class
                   }
   | SundayClass { classInterval :: Interval
                 }
+  deriving (Show)
 
 data Hour
   = H0
@@ -170,9 +173,9 @@ data Interval
                }
 
 newtype JSONParseSpanish a
-  = ESparse a
+  = ESparse { getES :: a }
 newtype JSONParseEnglish a
-  = ENparse a
+  = ENparse { getEN :: a }
 
 
 instance Show Interval where
@@ -242,7 +245,7 @@ instance FromJSON Time where
      = prependFailure "parsing Time failed, " $ case res of
        [x,y] -> MkTime <$> h x <*> t y
        []    -> parseFail "inexistent hour for class"
-       _     -> parseFail "unexpected ':'. More than 1."
+       _     -> parseFail "unexpected ':'. More than one ':'."
     where res =  T.splitOn ":" str
           h head' = case M.lookup head' hourMap of
                       Just hour -> pure hour
@@ -288,7 +291,7 @@ instance FromJSON (JSONParseEnglish Interval) where
 instance FromJSON (JSONParseEnglish Class) where
   parseJSON (Object obj) = prependFailure "parsing Class failed, " $ do
     day      <- obj .: "day"
-    interval <- prependFailure (T.unpack $ "in day '" <> day <> "', ") $ parseJSON (Object obj)
+    (ENparse interval) <- prependFailure (T.unpack $ "in day '" <> day <> "', ") $ parseJSON (Object obj)
     case M.lookup day dayMapEnglish of
       Just constructor -> pure . ENparse $ constructor interval
       _                -> parseFail $ T.unpack $ "Invalid Class day: " <> day
@@ -319,7 +322,7 @@ dayMapEnglish = M.fromList [ ("monday", MondayClass)
 instance FromJSON (JSONParseSpanish Class) where
   parseJSON (Object obj) = prependFailure "lectura de Clase fallida, " $ do
     day      <- obj .: "dia" <|> obj .: "día"
-    interval <- prependFailure (T.unpack $ "en día '" <> day <> "', ") $ parseJSON (Object obj)
+    (ESparse interval) <- prependFailure (T.unpack $ "en día '" <> day <> "', ") $ parseJSON (Object obj)
     case M.lookup day dayMapSpanish of
       Just constructor -> pure . ESparse $ constructor interval
       _                -> parseFail $ T.unpack $ "Día de clase inválido: " <> day
@@ -329,7 +332,7 @@ instance FromJSON (JSONParseSpanish Class) where
 
 instance FromJSON (JSONParseEnglish IDandSubj) where
   parseJSON (Object obj) = prependFailure "parsing Subject failed, " $ do
-    name      <- obj .: "nombre"
+    name      <- obj .: "name"
     let errorInClassName = "in class '" <> T.unpack name <> "', "
     classId   <- prependFailure errorInClassName $ obj .: "class-id"
     let errorInClassId = errorInClassName
@@ -337,8 +340,8 @@ instance FromJSON (JSONParseEnglish IDandSubj) where
     professor <- prependFailure errorInClassId $ obj .: "professor"
     let errorInClassProfessor = errorInClassId
                               <> ("with Professor: '" <> T.unpack professor <> "', ")
-    classes <- prependFailure errorInClassProfessor $ obj .: "days"
-    pure . ENparse $ IDandSubj (classId, MkSubject name professor classes)
+    (classes :: [JSONParseEnglish Class]) <- prependFailure errorInClassProfessor $ obj .: "days"
+    pure . ENparse $ IDandSubj (classId, MkSubject name professor (getEN <$> classes))
 
   parseJSON invalid =
         prependFailure "parsing Interval failed, "
@@ -354,8 +357,8 @@ instance FromJSON (JSONParseSpanish IDandSubj) where
     professor <- prependFailure errorInClassId $ obj .: "profesor"
     let errorInClassProfessor = errorInClassId
                               <> ("con Profesor: '" <> T.unpack professor <> "', ")
-    classes <- prependFailure errorInClassProfessor $ obj .: "dias" <|> obj .: "días"
-    pure . ESparse $ IDandSubj (classId, MkSubject name professor classes)
+    (classes :: [JSONParseSpanish Class]) <- prependFailure errorInClassProfessor $ obj .: "dias" <|> obj .: "días"
+    pure . ESparse $ IDandSubj (classId, MkSubject name professor (getES <$> classes))
 
   parseJSON invalid =
         prependFailure "lectura de Intervalo fallida, "
@@ -426,10 +429,22 @@ validate allSubjectsMp = foldl foldingF ([],[])
               Nothing  -> let validCombination = fmap (\ txtid -> IDandSubj (txtid, allSubjectsMp M.! txtid)) xs
                            in (errs, validCombination :validSchedules)
 
+decodeSpanish :: FilePath -> IO (Either ParseException [IDandSubj])
+decodeSpanish filePath = do
+  res :: Either ParseException [JSONParseSpanish IDandSubj] <- decodeFileEither filePath
+  pure $ fmap (getES <$>) res
 
-program :: IO ()
-program = do
-  (res :: Either ParseException [IDandSubj]) <- decodeFileEither "test-english.yaml" -- TODO: get file from arguments
+decodeEnglish :: FilePath -> IO (Either ParseException [IDandSubj])
+decodeEnglish filePath = do
+  res :: Either ParseException [JSONParseEnglish IDandSubj] <- decodeFileEither filePath
+  pure $ fmap (getEN <$>) res
+
+
+program :: LanguageMode -> FilePath -> IO ()
+program lang filePath = let ?lang = lang in do
+  res :: Either ParseException [IDandSubj] <- case lang of
+                                                Spanish -> decodeSpanish filePath
+                                                English -> decodeEnglish filePath
   terminalSize <- size
   let layout = (\s -> LayoutOptions (AvailablePerLine s 1) )
              $ case terminalSize of
@@ -451,23 +466,23 @@ collectValidationResults xs = do
 -- pretty print
 
 -- maybe this isn't used
-instance Pretty (JSONParseEnglish Class) where
-  pretty (ENparse (MondayClass interval))    = "Monday:   " <+> pretty interval
-  pretty (ENparse (TuesdayClass interval))   = "Tuesday:  " <+> pretty interval
-  pretty (ENparse (WednesdayClass interval)) = "Wednesday:" <+> pretty interval
-  pretty (ENparse (ThursdayClass interval))  = "Thursday: " <+> pretty interval
-  pretty (ENparse (FridayClass interval))    = "Friday:   " <+> pretty interval
-  pretty (ENparse (SaturdayClass interval))  = "Saturday: " <+> pretty interval
-  pretty (ENparse (SundayClass interval))    = "Sunday:   " <+> pretty interval
+-- instance Pretty (JSONParseEnglish Class) where
+--   pretty (ENparse (MondayClass interval))    = "Monday:   " <+> pretty interval
+--   pretty (ENparse (TuesdayClass interval))   = "Tuesday:  " <+> pretty interval
+--   pretty (ENparse (WednesdayClass interval)) = "Wednesday:" <+> pretty interval
+--   pretty (ENparse (ThursdayClass interval))  = "Thursday: " <+> pretty interval
+--   pretty (ENparse (FridayClass interval))    = "Friday:   " <+> pretty interval
+--   pretty (ENparse (SaturdayClass interval))  = "Saturday: " <+> pretty interval
+--   pretty (ENparse (SundayClass interval))    = "Sunday:   " <+> pretty interval
 
-instance Pretty (JSONParseSpanish Class) where
-  pretty (ESparse (MondayClass interval))    = "Lunes:    " <+> pretty interval
-  pretty (ESparse (TuesdayClass interval))   = "Martes:   " <+> pretty interval
-  pretty (ESparse (WednesdayClass interval)) = "Miércoles:" <+> pretty interval
-  pretty (ESparse (ThursdayClass interval))  = "Jueves:   " <+> pretty interval
-  pretty (ESparse (FridayClass interval))    = "Viernes:  " <+> pretty interval
-  pretty (ESparse (SaturdayClass interval))  = "Sábados:  " <+> pretty interval
-  pretty (ESparse (SundayClass interval))    = "Domingo:  " <+> pretty interval
+-- instance Pretty (JSONParseSpanish Class) where
+--   pretty (ESparse (MondayClass interval))    = "Lunes:    " <+> pretty interval
+--   pretty (ESparse (TuesdayClass interval))   = "Martes:   " <+> pretty interval
+--   pretty (ESparse (WednesdayClass interval)) = "Miércoles:" <+> pretty interval
+--   pretty (ESparse (ThursdayClass interval))  = "Jueves:   " <+> pretty interval
+--   pretty (ESparse (FridayClass interval))    = "Viernes:  " <+> pretty interval
+--   pretty (ESparse (SaturdayClass interval))  = "Sábados:  " <+> pretty interval
+--   pretty (ESparse (SundayClass interval))    = "Domingo:  " <+> pretty interval
 
 instance Pretty Hour where
   pretty H0  = "00"
@@ -506,82 +521,114 @@ instance Pretty Time where
 instance Pretty Interval where
   pretty (MkInterval start end) = pretty start <+> "-" <+> pretty end
 
-instance Pretty (JSONParseSpanish Subject) where
-  pretty (ESparse (MkSubject name professor classes))
-    = vsep [ "Materia: " <> pretty name
-           , "Profesor: " <> pretty professor
-           , "Clases:"
-           , indent 2 (vsep (map pretty classes))
-           ]
+-- instance Pretty (JSONParseSpanish Subject) where
+--   pretty (ESparse (MkSubject name professor classes))
+--     = vsep [ "Materia: " <> pretty name
+--            , "Profesor: " <> pretty professor
+--            , "Clases:"
+--            , indent 2 (vsep (map pretty (ESparse <$> classes)))
+--            ]
 
-instance Pretty (JSONParseEnglish Subject) where
-  pretty (ENparse (MkSubject name professor classes))
-    = vsep [ "Subject: " <> pretty name
-           , "Professor: " <> pretty professor
-           , "Classes:"
-           , indent 2 (vsep (map pretty classes))
-           ]
+-- instance Pretty (JSONParseEnglish Subject) where
+--   pretty (ENparse (MkSubject name professor classes))
+--     = vsep [ "Subject: " <> pretty name
+--            , "Professor: " <> pretty professor
+--            , "Classes:"
+--            , indent 2 (vsep (map pretty (ENparse <$> classes)))
+--            ]
 
-instance Pretty (JSONParseEnglish Error) where
-  pretty (ENparse (OverlappingClasses (subj1, class1) (subj2, class2)))
-    = "Overlapping classes:" <> line
-    <> indent 2 (vsep [pretty subj1 <+> pretty class1, pretty subj2 <+> pretty class2])
-  pretty (ENparse (RepeatedSubjId subjId subj1 subj2))
-    = "Repeated subject ID: " <> pretty subjId <> line <>
-      indent 2 (vsep [pretty subj1, pretty subj2])
+-- instance Pretty (JSONParseEnglish Error) where
+--   pretty (ENparse (OverlappingClasses (subj1, class1) (subj2, class2)))
+--     = "Overlapping classes:" <> line
+--     <> indent 2 (vsep [pretty s1 <+> pretty c1, pretty s2 <+> pretty c2])
+--     where (s1, c1, s2, c2) = (ENparse subj1, ENparse class1, ENparse subj2, ENparse class2)
 
-instance Pretty (JSONParseSpanish Error)where
-  pretty (ESparse (OverlappingClasses (subj1, class1) (subj2, class2)))
-    = "Clases sobrepuestas:" <> line
-    <> indent 2 (vsep [pretty subj1 <+> pretty class1, pretty subj2 <+> pretty class2])
-  pretty (ESparse (RepeatedSubjId subjId subj1 subj2))
-    = "ID repetido de Materia :" <+> pretty subjId <> line <>
-      indent 2 (vsep [pretty subj1, pretty subj2])
+--   pretty (ENparse (RepeatedSubjId subjId subj1 subj2))
+--     = "Repeated subject ID: " <> pretty subjId <> line <>
+--       indent 2 (vsep [pretty s1, pretty s2])
+--     where (s1, s2) = (ENparse subj1, ENparse subj2)
+
+-- instance Pretty (JSONParseSpanish Error)where
+--   pretty (ESparse (OverlappingClasses (subj1, class1) (subj2, class2)))
+--     = "Clases sobrepuestas:" <> line
+--     <> indent 2 (vsep [pretty s1 <+> pretty c1, pretty s2 <+> pretty c2])
+--     where (s1, c1, s2, c2) = (ESparse subj1, ESparse class1, ESparse subj2, ESparse class2)
+
+--   pretty (ESparse (RepeatedSubjId subjId subj1 subj2))
+--     = "ID repetido de Materia :" <+> pretty subjId <> line <>
+--       indent 2 (vsep [pretty s1, pretty s2])
+--     where (s1, s2) = (ESparse subj1, ESparse subj2)
+
+annotateClass :: (?lang :: LanguageMode) => Class -> Doc AnsiStyle
+annotateClass (MondayClass interval)    = annotate (color Cyan <> bold) msg <+> pretty interval
+  where msg = case ?lang of
+                Spanish -> "Lunes:    "
+                English -> "Monday:   "
+annotateClass (TuesdayClass interval)   = annotate (color Cyan <> bold) msg <+> pretty interval
+  where msg = case ?lang of
+                Spanish -> "Martes:   "
+                English -> "Tuesday:  "
+annotateClass (WednesdayClass interval) = annotate (color Cyan <> bold) msg <+> pretty interval
+  where msg = case ?lang of
+                Spanish -> "Miércoles:"
+                English -> "Wednesday:"
+annotateClass (ThursdayClass interval)  = annotate (color Cyan <> bold) msg <+> pretty interval
+  where msg = case ?lang of
+                Spanish -> "Jueves:   "
+                English -> "Thursday: "
+annotateClass (FridayClass interval)    = annotate (color Cyan <> bold) msg <+> pretty interval
+  where msg = case ?lang of
+                Spanish -> "Viernes:  "
+                English -> "Friday:   "
+annotateClass (SaturdayClass interval)  = annotate (color Cyan <> bold) msg <+> pretty interval
+  where msg = case ?lang of
+                Spanish -> "Sábado:   "
+                English -> "Saturday: "
+
+annotateClass (SundayClass interval)    = annotate (color Cyan <> bold) msg <+> pretty interval
+  where msg = case ?lang of
+                Spanish -> "Domingo:  "
+                English -> "Sunday:   "
 
 
-annotateClassES :: Class -> Doc AnsiStyle
-annotateClassES (MondayClass interval)    = annotate (color Cyan <> bold) "Lunes:    " <+> pretty interval
-annotateClassES (TuesdayClass interval)   = annotate (color Cyan <> bold) "Martes:   " <+> pretty interval
-annotateClassES (WednesdayClass interval) = annotate (color Cyan <> bold) "Miércoles:" <+> pretty interval
-annotateClassES (ThursdayClass interval)  = annotate (color Cyan <> bold) "Jueves:   " <+> pretty interval
-annotateClassES (FridayClass interval)    = annotate (color Cyan <> bold) "Viernes:  " <+> pretty interval
-annotateClassES (SaturdayClass interval)  = annotate (color Cyan <> bold) "Sábado:   " <+> pretty interval
-annotateClassES (SundayClass interval)    = annotate (color Cyan <> bold) "Domingo:  " <+> pretty interval
-
-annotateClassEN :: Class -> Doc AnsiStyle
-annotateClassEN (MondayClass interval)    = annotate (color Cyan <> bold) "Monday:   " <+> pretty interval
-annotateClassEN (TuesdayClass interval)   = annotate (color Cyan <> bold) "Tuesday:  " <+> pretty interval
-annotateClassEN (WednesdayClass interval) = annotate (color Cyan <> bold) "Wednesday:" <+> pretty interval
-annotateClassEN (ThursdayClass interval)  = annotate (color Cyan <> bold) "Thursday: " <+> pretty interval
-annotateClassEN (FridayClass interval)    = annotate (color Cyan <> bold) "Friday:   " <+> pretty interval
-annotateClassEN (SaturdayClass interval)  = annotate (color Cyan <> bold) "Saturday: " <+> pretty interval
-annotateClassEN (SundayClass interval)    = annotate (color Cyan <> bold) "Sunday:   " <+> pretty interval
-
-annotateSubjectEN :: IDandSubj -> Doc AnsiStyle
-annotateSubjectEN (IDandSubj (txtid, MkSubject name professor classes))
-  = vsep [annotateFieldName "Class ID: " <+> pretty txtid
-         , annotateFieldName "Subject:  " <+> pretty name
-         , annotateFieldName "Professor:" <+> pretty professor
-         , annotateFieldName "Classes:"
-         , indent 2 (vsep (map annotateClassEN classes))]
+annotateSubject :: (?lang :: LanguageMode) => Subject -> Doc AnsiStyle
+annotateSubject (MkSubject name professor classes)
+  = vsep [ annotateFieldName subjMsg <+> pretty name
+         , annotateFieldName profMsg  <+> pretty professor
+         , annotateFieldName classsMsg
+         , indent 2 (vsep (map annotateClass classes))]
   where annotateFieldName = annotate (color Blue <> bold)
+        (subjMsg, profMsg, classsMsg)
+          = case ?lang of
+              Spanish -> ("Materia:    ", "Profesor:   ", "Clases:")
+              English -> ("Subject:    ", "Professor:  ", "Classes:")
 
-annotateSubjectES :: IDandSubj -> Doc AnsiStyle
-annotateSubjectES (IDandSubj (txtid, MkSubject name professor classes))
-  = vsep [annotateFieldName "Class ID: " <+> pretty txtid
-         , annotateFieldName "Subject:  " <+> pretty name
-         , annotateFieldName "Professor:" <+> pretty professor
-         , annotateFieldName "Classes:"
-         , indent 2 (vsep (map annotateClassES classes))]
+
+annotateIDandSubject :: (?lang :: LanguageMode) => IDandSubj -> Doc AnsiStyle
+annotateIDandSubject (IDandSubj (txtid, subj))
+  = vsep [ annotateFieldName classIdMsg <+> pretty txtid
+         , annotateSubject subj
+         ]
   where annotateFieldName = annotate (color Blue <> bold)
+        classIdMsg
+          = case ?lang of
+              Spanish -> "ID de Clase:"
+              English -> "Class ID:   "
 
-annotateError :: Error -> Doc AnsiStyle
+
+annotateError :: (?lang :: LanguageMode) => Error -> Doc AnsiStyle
 annotateError (OverlappingClasses (subj1, class1) (subj2, class2)) =
-  annotate (color Red <> bold) "Overlapping classes:" <> line <>
-  indent 2 (vsep [pretty subj1 <+> pretty class1, pretty subj2 <+> pretty class2])
+  annotate (color Red <> bold) msg <> line <>
+  indent 2 (vsep [annotateSubject subj1 <+> annotateClass class1, annotateSubject subj2 <+> annotateClass class2])
+  where msg = case ?lang of
+                Spanish -> "Clases sobrepuestas:"
+                English -> "Overlapping classes:"
 annotateError (RepeatedSubjId subjId subj1 subj2) =
-  annotate (color Red <> bold) "Repeated subject ID: " <> pretty subjId <> line <>
-  indent 2 (vsep [pretty subj1, pretty subj2])
+  annotate (color Red <> bold) msg <> pretty subjId <> line <>
+  indent 2 (vsep [annotateSubject subj1, annotateSubject subj2])
+  where msg = case ?lang of
+                Spanish -> "ID de materia repetido:"
+                English -> "Repeated subject ID: "
 
 
 separateWith :: AnsiStyle -> Char -> Int -> Doc AnsiStyle -> Doc AnsiStyle -> Doc AnsiStyle
@@ -592,14 +639,14 @@ separateWith lineStyle lineChar numOfLines l r = l <> emptyLines  <> separatingL
                      else line
 
 
-annotateErrors :: [Error] -> Doc AnsiStyle
+annotateErrors :: (?lang :: LanguageMode) => [Error] -> Doc AnsiStyle
 annotateErrors es = annotate (color Red <> bold) (concatWith (separateWith bold '-' 1) (map annotateError es))
 
-annotateSubjectList :: [IDandSubj] -> Doc AnsiStyle
-annotateSubjectList ss = concatWith (separateWith (colorDull Yellow) '-' 1) (map annotateSubject ss)
+annotateSubjectList :: (?lang :: LanguageMode) => [IDandSubj] -> Doc AnsiStyle
+annotateSubjectList ss = concatWith (separateWith (colorDull Yellow) '-' 1) (map annotateIDandSubject ss)
 -- annotateSubjectList ss = fillSep (map annotateSubject ss)
 
-annotateSubjectLists :: [[IDandSubj]] -> Doc AnsiStyle
+annotateSubjectLists :: (?lang :: LanguageMode) => [[IDandSubj]] -> Doc AnsiStyle
 annotateSubjectLists ss = concatWith (separateWith (color Magenta <> bold) '=' 2) (map annotateSubjectList ss) <> line
 
 
