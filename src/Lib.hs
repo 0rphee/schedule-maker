@@ -1,6 +1,8 @@
+{-# LANGUAGE DeriveFunctor       #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE ImplicitParams      #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE RankNTypes          #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections       #-}
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
@@ -15,7 +17,8 @@ module Lib
 
 import Combinatorics                 ( tuples )
 
-import Data.Aeson.Types              ( parseFail, prependFailure, typeMismatch )
+import Data.Aeson.Types              ( Object, parseFail, prependFailure,
+                                       typeMismatch )
 import Data.Bifunctor                ( Bifunctor (first) )
 import Data.Map.Strict               qualified as M
 import Data.Text                     qualified as T
@@ -172,10 +175,25 @@ data Interval
                , intervalEndTime      :: Time
                }
 
-newtype JSONParseSpanish a
-  = ESparse { getES :: a }
+class Functor w => JSONLanguageMode w where
+  getJSONResult :: w v -> v
+  putJSONResult :: v -> w v
+
+newtype JSONParseSpanish v
+  = ESparse v
+  deriving (Functor)
+
+instance JSONLanguageMode JSONParseSpanish where
+  getJSONResult (ESparse v) = v
+  putJSONResult = ESparse
+
 newtype JSONParseEnglish a
-  = ENparse { getEN :: a }
+  = ENparse a
+  deriving (Functor)
+
+instance JSONLanguageMode JSONParseEnglish where
+  getJSONResult (ENparse v) = v
+  putJSONResult = ENparse
 
 
 instance Show Interval where
@@ -288,48 +306,40 @@ instance FromJSON (JSONParseEnglish Interval) where
         prependFailure "parsing Interval failed, "
             (typeMismatch "Object" invalid)
 
-instance FromJSON (JSONParseEnglish Class) where
-  parseJSON (Object obj) = prependFailure "parsing Class failed, " $ do
-    day      <- obj .: "day"
-    (ENparse interval) <- prependFailure (T.unpack $ "in day '" <> day <> "', ") $ parseJSON (Object obj)
-    case M.lookup day dayMapEnglish of
-      Just constructor -> pure . ENparse $ constructor interval
-      _                -> parseFail $ T.unpack $ "Invalid Class day: " <> day
-  parseJSON invalid =
-        prependFailure "parsing Interval failed, "
-            (typeMismatch "Object" invalid)
+dayMap :: M.Map T.Text (Interval -> Class)
+dayMap = M.fromList [ ("lunes", MondayClass)
+                    , ("martes", TuesdayClass)
+                    , ("miercoles", WednesdayClass)
+                    , ("jueves", ThursdayClass)
+                    , ("viernes", FridayClass)
+                    , ("sabado", SaturdayClass)
+                    , ("domingo", SundayClass)
+                    , ("monday", MondayClass)
+                    , ("tuesday", TuesdayClass)
+                    , ("wednesday", WednesdayClass)
+                    , ("thursday", ThursdayClass)
+                    , ("friday", FridayClass)
+                    , ("saturday", SaturdayClass)
+                    , ("sunday", SundayClass)
+                    ]
 
-dayMapSpanish :: M.Map T.Text (Interval -> Class)
-dayMapSpanish = M.fromList [ ("lunes", MondayClass)
-                           , ("martes", TuesdayClass)
-                           , ("miercoles", WednesdayClass)
-                           , ("jueves", ThursdayClass)
-                           , ("viernes", FridayClass)
-                           , ("sabado", SaturdayClass)
-                           , ("domingo", SundayClass)
-                           ]
-
-dayMapEnglish :: M.Map T.Text (Interval -> Class)
-dayMapEnglish = M.fromList [ ("monday", MondayClass)
-                           , ("tuesday", TuesdayClass)
-                           , ("wednesday", WednesdayClass)
-                           , ("thursday", ThursdayClass)
-                           , ("friday", FridayClass)
-                           , ("saturday", SaturdayClass)
-                           , ("sunday", SundayClass)
-                           ]
-
+parseClassGeneralized classFailureMsg dayParser dayFailureMsg invalidClassDay (Object obj)
+  = prependFailure classFailureMsg $ do
+  day <- dayParser obj
+  (inter :: JSONLanguageMode lan => lan Interval) <- prependFailure (T.unpack $ dayFailureMsg <> day <> "', ") $ parseJSON (Object obj)
+  case M.lookup day dayMap of
+    Just constructor -> pure $ constructor <$> inter
+    _                -> parseFail $ T.unpack $ invalidClassDay <> day
+parseClassGeneralized _ _ _ _ invalid = putJSONResult <$>
+  prependFailure "parsing Interval failed, "
+      (typeMismatch "Object" invalid)
 
 instance FromJSON (JSONParseSpanish Class) where
-  parseJSON (Object obj) = prependFailure "lectura de Clase fallida, " $ do
-    day      <- obj .: "dia" <|> obj .: "día"
-    (ESparse interval) <- prependFailure (T.unpack $ "en día '" <> day <> "', ") $ parseJSON (Object obj)
-    case M.lookup day dayMapSpanish of
-      Just constructor -> pure . ESparse $ constructor interval
-      _                -> parseFail $ T.unpack $ "Día de clase inválido: " <> day
-  parseJSON invalid =
-        prependFailure "parsing Interval failed, "
-            (typeMismatch "Object" invalid)
+  parseJSON = parseClassGeneralized "lectura de Clase fallida, " (\obj -> obj .: "dia" <|> obj .: "día") "en día '" "Día de clase inválido: "
+
+instance FromJSON (JSONParseEnglish Class) where
+  parseJSON = parseClassGeneralized  "parsing Subject failed, " (.: "day") "in day '" "Invalid Class day: "
+
 
 instance FromJSON (JSONParseEnglish IDandSubj) where
   parseJSON (Object obj) = prependFailure "parsing Subject failed, " $ do
@@ -342,7 +352,7 @@ instance FromJSON (JSONParseEnglish IDandSubj) where
     let errorInClassProfessor = errorInClassId
                               <> ("with Professor: '" <> T.unpack professor <> "', ")
     (classes :: [JSONParseEnglish Class]) <- prependFailure errorInClassProfessor $ obj .: "days"
-    pure . ENparse $ IDandSubj (classId, MkSubject name professor (getEN <$> classes))
+    pure . ENparse $ IDandSubj (classId, MkSubject name professor (getJSONResult <$> classes))
 
   parseJSON invalid =
         prependFailure "parsing Interval failed, "
@@ -359,7 +369,7 @@ instance FromJSON (JSONParseSpanish IDandSubj) where
     let errorInClassProfessor = errorInClassId
                               <> ("con Profesor: '" <> T.unpack professor <> "', ")
     (classes :: [JSONParseSpanish Class]) <- prependFailure errorInClassProfessor $ obj .: "dias" <|> obj .: "días"
-    pure . ESparse $ IDandSubj (classId, MkSubject name professor (getES <$> classes))
+    pure . ESparse $ IDandSubj (classId, MkSubject name professor (getJSONResult <$> classes))
 
   parseJSON invalid =
         prependFailure "lectura de Intervalo fallida, "
@@ -433,12 +443,12 @@ validate allSubjectsMp = foldl foldingF ([],[])
 decodeSpanish :: FilePath -> IO (Either ParseException [IDandSubj])
 decodeSpanish filePath = do
   res :: Either ParseException [JSONParseSpanish IDandSubj] <- decodeFileEither filePath
-  pure $ fmap (getES <$>) res
+  pure $ fmap (getJSONResult <$>) res
 
 decodeEnglish :: FilePath -> IO (Either ParseException [IDandSubj])
 decodeEnglish filePath = do
   res :: Either ParseException [JSONParseEnglish IDandSubj] <- decodeFileEither filePath
-  pure $ fmap (getEN <$>) res
+  pure $ fmap (getJSONResult <$>) res
 
 
 program :: LanguageMode -> FilePath -> IO ()
