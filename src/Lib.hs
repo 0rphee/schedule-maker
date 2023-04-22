@@ -319,6 +319,7 @@ dayMapEnglish = M.fromList [ ("monday", MondayClass)
                            , ("sunday", SundayClass)
                            ]
 
+
 instance FromJSON (JSONParseSpanish Class) where
   parseJSON (Object obj) = prependFailure "lectura de Clase fallida, " $ do
     day      <- obj .: "dia" <|> obj .: "día"
@@ -463,27 +464,6 @@ collectValidationResults xs = do
     (errorList, []) -> Left errorList
     (_, successes)  -> pure successes
 
--- pretty print
-
--- maybe this isn't used
--- instance Pretty (JSONParseEnglish Class) where
---   pretty (ENparse (MondayClass interval))    = "Monday:   " <+> pretty interval
---   pretty (ENparse (TuesdayClass interval))   = "Tuesday:  " <+> pretty interval
---   pretty (ENparse (WednesdayClass interval)) = "Wednesday:" <+> pretty interval
---   pretty (ENparse (ThursdayClass interval))  = "Thursday: " <+> pretty interval
---   pretty (ENparse (FridayClass interval))    = "Friday:   " <+> pretty interval
---   pretty (ENparse (SaturdayClass interval))  = "Saturday: " <+> pretty interval
---   pretty (ENparse (SundayClass interval))    = "Sunday:   " <+> pretty interval
-
--- instance Pretty (JSONParseSpanish Class) where
---   pretty (ESparse (MondayClass interval))    = "Lunes:    " <+> pretty interval
---   pretty (ESparse (TuesdayClass interval))   = "Martes:   " <+> pretty interval
---   pretty (ESparse (WednesdayClass interval)) = "Miércoles:" <+> pretty interval
---   pretty (ESparse (ThursdayClass interval))  = "Jueves:   " <+> pretty interval
---   pretty (ESparse (FridayClass interval))    = "Viernes:  " <+> pretty interval
---   pretty (ESparse (SaturdayClass interval))  = "Sábados:  " <+> pretty interval
---   pretty (ESparse (SundayClass interval))    = "Domingo:  " <+> pretty interval
-
 instance Pretty Hour where
   pretty H0  = "00"
   pretty H1  = "01"
@@ -520,44 +500,6 @@ instance Pretty Time where
 
 instance Pretty Interval where
   pretty (MkInterval start end) = pretty start <+> "-" <+> pretty end
-
--- instance Pretty (JSONParseSpanish Subject) where
---   pretty (ESparse (MkSubject name professor classes))
---     = vsep [ "Materia: " <> pretty name
---            , "Profesor: " <> pretty professor
---            , "Clases:"
---            , indent 2 (vsep (map pretty (ESparse <$> classes)))
---            ]
-
--- instance Pretty (JSONParseEnglish Subject) where
---   pretty (ENparse (MkSubject name professor classes))
---     = vsep [ "Subject: " <> pretty name
---            , "Professor: " <> pretty professor
---            , "Classes:"
---            , indent 2 (vsep (map pretty (ENparse <$> classes)))
---            ]
-
--- instance Pretty (JSONParseEnglish Error) where
---   pretty (ENparse (OverlappingClasses (subj1, class1) (subj2, class2)))
---     = "Overlapping classes:" <> line
---     <> indent 2 (vsep [pretty s1 <+> pretty c1, pretty s2 <+> pretty c2])
---     where (s1, c1, s2, c2) = (ENparse subj1, ENparse class1, ENparse subj2, ENparse class2)
-
---   pretty (ENparse (RepeatedSubjId subjId subj1 subj2))
---     = "Repeated subject ID: " <> pretty subjId <> line <>
---       indent 2 (vsep [pretty s1, pretty s2])
---     where (s1, s2) = (ENparse subj1, ENparse subj2)
-
--- instance Pretty (JSONParseSpanish Error)where
---   pretty (ESparse (OverlappingClasses (subj1, class1) (subj2, class2)))
---     = "Clases sobrepuestas:" <> line
---     <> indent 2 (vsep [pretty s1 <+> pretty c1, pretty s2 <+> pretty c2])
---     where (s1, c1, s2, c2) = (ESparse subj1, ESparse class1, ESparse subj2, ESparse class2)
-
---   pretty (ESparse (RepeatedSubjId subjId subj1 subj2))
---     = "ID repetido de Materia :" <+> pretty subjId <> line <>
---       indent 2 (vsep [pretty s1, pretty s2])
---     where (s1, s2) = (ESparse subj1, ESparse subj2)
 
 annotateClass :: (?lang :: LanguageMode) => Class -> Doc AnsiStyle
 annotateClass (MondayClass interval)    = annotate (color Cyan <> bold) msg <+> pretty interval
