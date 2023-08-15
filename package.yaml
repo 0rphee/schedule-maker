@@ -24,11 +24,14 @@ dependencies:
 - text
 - yaml
 - aeson
-- combinatorial
 - containers
 - prettyprinter
 - prettyprinter-ansi-terminal
 - terminal-size
+- xlsx
+- bytestring
+- lens
+- time
 
 ghc-options:
 - -Wall
@@ -44,8 +47,7 @@ ghc-options:
 default-extensions:
 - OverloadedStrings
 
-library:
-  source-dirs: src
+source-dirs: src
 
 executables:
   schedule-maker-exe:
@@ -55,8 +57,6 @@ executables:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
-    dependencies:
-    - schedule-maker
 
 tests:
   schedule-maker-test:
@@ -66,5 +66,3 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
-    dependencies:
-    - schedule-maker

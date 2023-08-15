@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.1.
+-- This file has been generated from package.yaml by hpack version 0.35.2.
 --
 -- see: https://github.com/sol/hpack
 
@@ -23,33 +23,13 @@ source-repository head
   type: git
   location: https://github.com/0rphee/schedule-maker
 
-library
-  exposed-modules:
-      Lib
-  other-modules:
-      Paths_schedule_maker
-  hs-source-dirs:
-      src
-  default-extensions:
-      OverloadedStrings
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
-  build-depends:
-      aeson
-    , base >=4.7 && <5
-    , combinatorial
-    , containers
-    , prettyprinter
-    , prettyprinter-ansi-terminal
-    , terminal-size
-    , text
-    , yaml
-  default-language: Haskell2010
-
 executable schedule-maker-exe
   main-is: Main.hs
   other-modules:
+      Lib
       Paths_schedule_maker
   hs-source-dirs:
+      src
       app
   default-extensions:
       OverloadedStrings
@@ -57,13 +37,15 @@ executable schedule-maker-exe
   build-depends:
       aeson
     , base >=4.7 && <5
-    , combinatorial
+    , bytestring
     , containers
+    , lens
     , prettyprinter
     , prettyprinter-ansi-terminal
-    , schedule-maker
     , terminal-size
     , text
+    , time
+    , xlsx
     , yaml
   default-language: Haskell2010
 
@@ -71,8 +53,10 @@ test-suite schedule-maker-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Lib
       Paths_schedule_maker
   hs-source-dirs:
+      src
       test
   default-extensions:
       OverloadedStrings
@@ -80,12 +64,14 @@ test-suite schedule-maker-test
   build-depends:
       aeson
     , base >=4.7 && <5
-    , combinatorial
+    , bytestring
     , containers
+    , lens
     , prettyprinter
     , prettyprinter-ansi-terminal
-    , schedule-maker
     , terminal-size
     , text
+    , time
+    , xlsx
     , yaml
   default-language: Haskell2010
