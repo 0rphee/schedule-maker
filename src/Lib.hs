@@ -692,72 +692,65 @@ getRowColumnCoordsOfClass cellVal c = case c of
   FridayClass i -> fridayCoord cellVal <$> getRowsFromInterval i
   _ -> error "more days not implemented"
 
-writeSubjInWorksheet :: Worksheet -> IDandSubj -> (Worksheet, StyleSheet)
+writeSubjInWorksheet :: Worksheet -> IDandSubj -> Worksheet
 writeSubjInWorksheet worksheet (IDandSubj (subjId, MkSubject {subjName, subjProfessor, subjclasses})) =
-  ( res
-      & wsCells .~ finalCellMap
-  , finalStylesheet
-  )
+  foldl'
+    (\ws (row, col, val) -> ws & cellValueAt (row, col) ?~ val)
+    worksheet
+    worksheetPositionsOfClasses
   where
-    res =
-      foldl'
-        (\ws (row, col, val) -> ws & cellValueAt (row, col) ?~ val)
-        worksheet
-        worksheetPositionsOfClasses
     worksheetPositionsOfClasses :: [(RowIndex, ColumnIndex, CellValue)]
     worksheetPositionsOfClasses = concatMap (getRowColumnCoordsOfClass cellMsg) subjclasses
 
     cellMsg :: CellValue
     cellMsg = CellText $ subjName <> "\n(" <> subjId <> ")\n" <> subjProfessor
 
-    (Formatted finalCellMap finalStylesheet finalMerges) = formatted (trans <$> (res ^. wsCells)) minimalStyleSheet
-
-    trans :: Cell -> FormattedCell
-    trans c =
-      def
-        & formattedCell .~ c
-        & formattedFormat
-          .~ ( def
-                & formatAlignment
-                  ?~ ( def -- Alignment
-                        & alignmentWrapText ?~ True
-                     )
-                & formatBorder
-                  ?~ ( def -- Border
-                        & borderTop ?~ myBorderStyle
-                        & borderBottom ?~ myBorderStyle
-                        & borderLeft ?~ myBorderStyle
-                        & borderRight ?~ myBorderStyle
-                        & borderVertical ?~ myBorderStyle
-                     )
-             )
-
-myBorderStyle :: BorderStyle
-myBorderStyle =
-  def
-    & borderStyleColor ?~ (def & colorAutomatic ?~ True)
-    & borderStyleLine ?~ LineStyleHair
-
-writeValidSchedule :: Worksheet -> [IDandSubj] -> (Worksheet, StyleSheet)
-writeValidSchedule w = foldl' (\(ws, _) x -> writeSubjInWorksheet ws x) (w, def)
+writeValidSchedule :: Worksheet -> [IDandSubj] -> Worksheet
+writeValidSchedule = foldl' writeSubjInWorksheet
 
 writeXlsxValidSchedules :: [[IDandSubj]] -> Xlsx
 writeXlsxValidSchedules xs =
-  fst $
-    foldl'
-      ( \(xlsx, c :: Int) x ->
-          let (finalSheet, finalStyleSheet) = writeValidSchedule initialSheet x
-           in ( xlsx
-                  & atSheet ("Schedule-" <> T.pack (show c)) ?~ finalSheet
-                  & xlStyles .~ renderStyleSheet finalStyleSheet
-              , c + 1
-              )
-      )
-      (def, 1)
-      xs
+  fst
+    ( foldl'
+        ( \(xlsx, c :: Int) x ->
+            let finalSheet = writeValidSchedule initialSheetStyled x
+             in ( xlsx
+                    & atSheet ("Schedule-" <> T.pack (show c)) ?~ finalSheet
+                , c + 1
+                )
+        )
+        (def, 1)
+        xs
+    )
+    & xlStyles .~ renderStyleSheet finalStylesheet
   where
-    initialSheet =
+    trans :: Cell -> FormattedCell
+    trans c =
+      let myBorderStyle :: BorderStyle
+          myBorderStyle =
+            def
+              & borderStyleColor ?~ (def & colorAutomatic ?~ True)
+              & borderStyleLine ?~ LineStyleThin
+       in def
+            & formattedCell .~ c
+            & formattedFormat
+              .~ ( def
+                    & formatAlignment
+                      ?~ ( def -- Alignment
+                            & alignmentWrapText ?~ True
+                         )
+                    & formatBorder
+                      ?~ ( def -- Border
+                            & borderTop ?~ myBorderStyle
+                            & borderBottom ?~ myBorderStyle
+                            & borderLeft ?~ myBorderStyle
+                            & borderRight ?~ myBorderStyle
+                            & borderVertical ?~ myBorderStyle
+                         )
+                 )
+    initialSheetNoStyled =
       def
+        & wsCells .~ M.fromList [((y, x), def) | x <- [1 .. 6], y <- [1 .. 49]]
         & cellValueAt (1, 2) ?~ CellText "Monday"
         & cellValueAt (1, 3) ?~ CellText "Tuesday"
         & cellValueAt (1, 4) ?~ CellText "Wednesday"
@@ -768,6 +761,10 @@ writeXlsxValidSchedules xs =
             (\ws' (row, col, val) -> ws' & cellValueAt (row, col) ?~ val)
             ws
             timeAnnotations
+    (Formatted finalCellMap finalStylesheet finalMerges) = formatted (trans <$> (initialSheetNoStyled ^. wsCells)) minimalStyleSheet
+    initialSheetStyled =
+      initialSheetNoStyled
+        & wsCells .~ finalCellMap
 
 timeAnnotations :: [(RowIndex, ColumnIndex, CellValue)]
 timeAnnotations =
@@ -778,28 +775,5 @@ timeAnnotations =
 saveExcel :: [[IDandSubj]] -> IO ()
 saveExcel xs = do
   ct <- getPOSIXTime
-  let xlsx =
-        writeXlsxValidSchedules xs
-  -- & xlStyles
-  --   .~ renderStyleSheet
-  --     stylesheet
-  -- stylesheet =
-  --   ( minimalStyleSheet -- StyleSheet
-  --       & styleSheetCellXfs
-  --         .~ [ def -- CellXF
-  --               & cellXfApplyAlignment ?~ True --
-  --               & cellXfAlignment
-  --                 ?~ ( def -- Alignment
-  --                       & alignmentWrapText ?~ True
-  --                    )
-  --            ]
-  --       & styleSheetBorders
-  --         .~ [ def
-  --               & borderTop ?~ myBorderStyle
-  --               & borderBottom ?~ myBorderStyle
-  --               & borderLeft ?~ myBorderStyle
-  --               & borderRight ?~ myBorderStyle
-  --               & borderVertical ?~ myBorderStyle
-  --            ]
-  --   )
+  let xlsx = writeXlsxValidSchedules xs
   L.writeFile "schedules.xlsx" $ fromXlsx ct xlsx
