@@ -1,17 +1,21 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 
-module Lib where
+module Lib (program) where
 
 import Codec.Xlsx
+import Codec.Xlsx.Formatted
+import Codec.Xlsx.Types.StyleSheet
 import Control.Applicative ((<|>))
 import Control.Lens
 import Data.Aeson.Types (parseFail, prependFailure, typeMismatch)
 import Data.Bifunctor (Bifunctor (first))
 import Data.ByteString.Lazy.Char8 qualified as L
-import Data.List (tails)
+import Data.List (foldl', tails)
 import Data.Map.Strict qualified as M
 import Data.Text qualified as T
 import Data.Time.Clock.POSIX
@@ -87,7 +91,7 @@ data Hour
   | H21
   | H22
   | H23
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Bounded)
 
 instance Show Hour where
   show x =
@@ -120,7 +124,7 @@ instance Show Hour where
 data Minute
   = ZeroMinutes
   | HalfAnHour
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Bounded)
 
 instance Show Minute where
   show x =
@@ -132,10 +136,113 @@ data Time = MkTime
   { timeHour :: Hour
   , timeMinute :: Minute
   }
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Bounded)
 
 instance Show Time where
   show (MkTime hour minutes) = show hour <> ":" <> show minutes
+
+instance Enum Time where
+  toEnum i =
+    case i of
+      0 -> MkTime H0 ZeroMinutes
+      1 -> MkTime H0 HalfAnHour
+      2 -> MkTime H1 ZeroMinutes
+      3 -> MkTime H1 HalfAnHour
+      4 -> MkTime H2 ZeroMinutes
+      5 -> MkTime H2 HalfAnHour
+      6 -> MkTime H3 ZeroMinutes
+      7 -> MkTime H3 HalfAnHour
+      8 -> MkTime H4 ZeroMinutes
+      9 -> MkTime H4 HalfAnHour
+      10 -> MkTime H5 ZeroMinutes
+      11 -> MkTime H5 HalfAnHour
+      12 -> MkTime H6 ZeroMinutes
+      13 -> MkTime H6 HalfAnHour
+      14 -> MkTime H7 ZeroMinutes
+      15 -> MkTime H7 HalfAnHour
+      16 -> MkTime H8 ZeroMinutes
+      17 -> MkTime H8 HalfAnHour
+      18 -> MkTime H9 ZeroMinutes
+      19 -> MkTime H9 HalfAnHour
+      20 -> MkTime H10 ZeroMinutes
+      21 -> MkTime H10 HalfAnHour
+      22 -> MkTime H11 ZeroMinutes
+      23 -> MkTime H11 HalfAnHour
+      24 -> MkTime H12 ZeroMinutes
+      25 -> MkTime H12 HalfAnHour
+      26 -> MkTime H13 ZeroMinutes
+      27 -> MkTime H13 HalfAnHour
+      28 -> MkTime H14 ZeroMinutes
+      29 -> MkTime H14 HalfAnHour
+      30 -> MkTime H15 ZeroMinutes
+      31 -> MkTime H15 HalfAnHour
+      32 -> MkTime H16 ZeroMinutes
+      33 -> MkTime H16 HalfAnHour
+      34 -> MkTime H17 ZeroMinutes
+      35 -> MkTime H17 HalfAnHour
+      36 -> MkTime H18 ZeroMinutes
+      37 -> MkTime H18 HalfAnHour
+      38 -> MkTime H19 ZeroMinutes
+      39 -> MkTime H19 HalfAnHour
+      40 -> MkTime H20 ZeroMinutes
+      41 -> MkTime H20 HalfAnHour
+      42 -> MkTime H21 ZeroMinutes
+      43 -> MkTime H21 HalfAnHour
+      44 -> MkTime H22 ZeroMinutes
+      45 -> MkTime H22 HalfAnHour
+      46 -> MkTime H23 ZeroMinutes
+      47 -> MkTime H23 HalfAnHour
+      _ -> error "out of bounds enum"
+  fromEnum t =
+    case t of
+      MkTime H0 ZeroMinutes -> 0
+      MkTime H0 HalfAnHour -> 1
+      MkTime H1 ZeroMinutes -> 2
+      MkTime H1 HalfAnHour -> 3
+      MkTime H2 ZeroMinutes -> 4
+      MkTime H2 HalfAnHour -> 5
+      MkTime H3 ZeroMinutes -> 6
+      MkTime H3 HalfAnHour -> 7
+      MkTime H4 ZeroMinutes -> 8
+      MkTime H4 HalfAnHour -> 9
+      MkTime H5 ZeroMinutes -> 10
+      MkTime H5 HalfAnHour -> 11
+      MkTime H6 ZeroMinutes -> 12
+      MkTime H6 HalfAnHour -> 13
+      MkTime H7 ZeroMinutes -> 14
+      MkTime H7 HalfAnHour -> 15
+      MkTime H8 ZeroMinutes -> 16
+      MkTime H8 HalfAnHour -> 17
+      MkTime H9 ZeroMinutes -> 18
+      MkTime H9 HalfAnHour -> 19
+      MkTime H10 ZeroMinutes -> 20
+      MkTime H10 HalfAnHour -> 21
+      MkTime H11 ZeroMinutes -> 22
+      MkTime H11 HalfAnHour -> 23
+      MkTime H12 ZeroMinutes -> 24
+      MkTime H12 HalfAnHour -> 25
+      MkTime H13 ZeroMinutes -> 26
+      MkTime H13 HalfAnHour -> 27
+      MkTime H14 ZeroMinutes -> 28
+      MkTime H14 HalfAnHour -> 29
+      MkTime H15 ZeroMinutes -> 30
+      MkTime H15 HalfAnHour -> 31
+      MkTime H16 ZeroMinutes -> 32
+      MkTime H16 HalfAnHour -> 33
+      MkTime H17 ZeroMinutes -> 34
+      MkTime H17 HalfAnHour -> 35
+      MkTime H18 ZeroMinutes -> 36
+      MkTime H18 HalfAnHour -> 37
+      MkTime H19 ZeroMinutes -> 38
+      MkTime H19 HalfAnHour -> 39
+      MkTime H20 ZeroMinutes -> 40
+      MkTime H20 HalfAnHour -> 41
+      MkTime H21 ZeroMinutes -> 42
+      MkTime H21 HalfAnHour -> 43
+      MkTime H22 ZeroMinutes -> 44
+      MkTime H22 HalfAnHour -> 45
+      MkTime H23 ZeroMinutes -> 46
+      MkTime H23 HalfAnHour -> 47
 
 data Interval = MkInterval
   { intervalStartingTime :: Time
@@ -342,8 +449,6 @@ genPossibleClassCombinations
   -> f [T.Text] -- outpts the list of lists of ids as Text
 genPossibleClassCombinations = sequenceA . M.elems
 
--- genPossibleClassCombinations = map M.elems . sequenceA
-
 tuples :: Int -> [a] -> [[a]]
 tuples =
   let go r =
@@ -399,13 +504,14 @@ program = do
         case sz of
           Nothing -> 80
           Just (Window _ w) -> w
+      prettyRender a = renderIO stdout $ layoutSmart layout a
   case res of
     Left err -> putStrLn $ prettyPrintParseException err
-    Right result ->
-      renderIO stdout $
-        layoutSmart layout $
-          either annotateErrors annotateSubjectLists $
-            collectValidationResults result
+    Right result -> case collectValidationResults result of
+      Left errs -> prettyRender (annotateErrors errs)
+      Right lists -> do
+        prettyRender (annotateSubjectLists lists)
+        saveExcel lists
 
 collectValidationResults :: [IDandSubj] -> Either [Error] [[IDandSubj]]
 collectValidationResults xs = do
@@ -548,12 +654,152 @@ annotateSubjectLists ss =
     (map annotateSubjectList ss)
     <> line
 
-aeiou :: IO ()
-aeiou = do
+dayCoord :: Int -> CellValue -> RowIndex -> (RowIndex, ColumnIndex, CellValue)
+dayCoord col cval row = (row, ColumnIndex col, cval)
+{-# INLINE dayCoord #-}
+
+mondayCoord :: CellValue -> RowIndex -> (RowIndex, ColumnIndex, CellValue)
+mondayCoord = dayCoord 2
+
+tuesdayCoord :: CellValue -> RowIndex -> (RowIndex, ColumnIndex, CellValue)
+tuesdayCoord = dayCoord 3
+
+wednesdayCoord :: CellValue -> RowIndex -> (RowIndex, ColumnIndex, CellValue)
+wednesdayCoord = dayCoord 4
+
+thursdayCoord :: CellValue -> RowIndex -> (RowIndex, ColumnIndex, CellValue)
+thursdayCoord = dayCoord 5
+
+fridayCoord :: CellValue -> RowIndex -> (RowIndex, ColumnIndex, CellValue)
+fridayCoord = dayCoord 6
+
+timeCoord :: Time -> RowIndex
+timeCoord t = RowIndex $ fromEnum t + 2
+{-# INLINE timeCoord #-}
+
+getRowsFromInterval :: Interval -> [RowIndex]
+getRowsFromInterval (MkInterval startingT endingT) = RowIndex . fromEnum <$> restOfTimes
+  where
+    restOfTimes = [startingT .. endingT]
+
+getRowColumnCoordsOfClass
+  :: CellValue -> Class -> [(RowIndex, ColumnIndex, CellValue)]
+getRowColumnCoordsOfClass cellVal c = case c of
+  MondayClass i -> mondayCoord cellVal <$> getRowsFromInterval i
+  TuesdayClass i -> tuesdayCoord cellVal <$> getRowsFromInterval i
+  WednesdayClass i -> wednesdayCoord cellVal <$> getRowsFromInterval i
+  ThursdayClass i -> thursdayCoord cellVal <$> getRowsFromInterval i
+  FridayClass i -> fridayCoord cellVal <$> getRowsFromInterval i
+  _ -> error "more days not implemented"
+
+writeSubjInWorksheet :: Worksheet -> IDandSubj -> (Worksheet, StyleSheet)
+writeSubjInWorksheet worksheet (IDandSubj (subjId, MkSubject {subjName, subjProfessor, subjclasses})) =
+  ( res
+      & wsCells .~ finalCellMap
+  , finalStylesheet
+  )
+  where
+    res =
+      foldl'
+        (\ws (row, col, val) -> ws & cellValueAt (row, col) ?~ val)
+        worksheet
+        worksheetPositionsOfClasses
+    worksheetPositionsOfClasses :: [(RowIndex, ColumnIndex, CellValue)]
+    worksheetPositionsOfClasses = concatMap (getRowColumnCoordsOfClass cellMsg) subjclasses
+
+    cellMsg :: CellValue
+    cellMsg = CellText $ subjName <> "\n(" <> subjId <> ")\n" <> subjProfessor
+
+    (Formatted finalCellMap finalStylesheet finalMerges) = formatted (trans <$> (res ^. wsCells)) minimalStyleSheet
+
+    trans :: Cell -> FormattedCell
+    trans c =
+      def
+        & formattedCell .~ c
+        & formattedFormat
+          .~ ( def
+                & formatAlignment
+                  ?~ ( def -- Alignment
+                        & alignmentWrapText ?~ True
+                     )
+                & formatBorder
+                  ?~ ( def -- Border
+                        & borderTop ?~ myBorderStyle
+                        & borderBottom ?~ myBorderStyle
+                        & borderLeft ?~ myBorderStyle
+                        & borderRight ?~ myBorderStyle
+                        & borderVertical ?~ myBorderStyle
+                     )
+             )
+
+myBorderStyle :: BorderStyle
+myBorderStyle =
+  def
+    & borderStyleColor ?~ (def & colorAutomatic ?~ True)
+    & borderStyleLine ?~ LineStyleHair
+
+writeValidSchedule :: Worksheet -> [IDandSubj] -> (Worksheet, StyleSheet)
+writeValidSchedule w = foldl' (\(ws, _) x -> writeSubjInWorksheet ws x) (w, def)
+
+writeXlsxValidSchedules :: [[IDandSubj]] -> Xlsx
+writeXlsxValidSchedules xs =
+  fst $
+    foldl'
+      ( \(xlsx, c :: Int) x ->
+          let (finalSheet, finalStyleSheet) = writeValidSchedule initialSheet x
+           in ( xlsx
+                  & atSheet ("Schedule-" <> T.pack (show c)) ?~ finalSheet
+                  & xlStyles .~ renderStyleSheet finalStyleSheet
+              , c + 1
+              )
+      )
+      (def, 1)
+      xs
+  where
+    initialSheet =
+      def
+        & cellValueAt (1, 2) ?~ CellText "Monday"
+        & cellValueAt (1, 3) ?~ CellText "Tuesday"
+        & cellValueAt (1, 4) ?~ CellText "Wednesday"
+        & cellValueAt (1, 5) ?~ CellText "Thursday"
+        & cellValueAt (1, 6) ?~ CellText "Friday"
+        & \ws ->
+          foldl'
+            (\ws' (row, col, val) -> ws' & cellValueAt (row, col) ?~ val)
+            ws
+            timeAnnotations
+
+timeAnnotations :: [(RowIndex, ColumnIndex, CellValue)]
+timeAnnotations =
+  [ (RowIndex $ fromEnum v + 2, ColumnIndex 1, CellText $ T.pack $ show v)
+  | v <- [minBound :: Time .. maxBound]
+  ]
+
+saveExcel :: [[IDandSubj]] -> IO ()
+saveExcel xs = do
   ct <- getPOSIXTime
-  let sheet =
-        def
-          & cellValueAt (1, 2) ?~ CellDouble 42.0
-          & cellValueAt (3, 2) ?~ CellText "foo"
-      xlsx = def & atSheet "List1" ?~ sheet
-  L.writeFile "example.xlsx" $ fromXlsx ct xlsx
+  let xlsx =
+        writeXlsxValidSchedules xs
+  -- & xlStyles
+  --   .~ renderStyleSheet
+  --     stylesheet
+  -- stylesheet =
+  --   ( minimalStyleSheet -- StyleSheet
+  --       & styleSheetCellXfs
+  --         .~ [ def -- CellXF
+  --               & cellXfApplyAlignment ?~ True --
+  --               & cellXfAlignment
+  --                 ?~ ( def -- Alignment
+  --                       & alignmentWrapText ?~ True
+  --                    )
+  --            ]
+  --       & styleSheetBorders
+  --         .~ [ def
+  --               & borderTop ?~ myBorderStyle
+  --               & borderBottom ?~ myBorderStyle
+  --               & borderLeft ?~ myBorderStyle
+  --               & borderRight ?~ myBorderStyle
+  --               & borderVertical ?~ myBorderStyle
+  --            ]
+  --   )
+  L.writeFile "schedules.xlsx" $ fromXlsx ct xlsx
