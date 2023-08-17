@@ -47,6 +47,11 @@ ghc-options:
 
 default-extensions:
 - OverloadedStrings
+- NamedFieldPuns
+- ScopedTypeVariables
+- PartialTypeSignatures
+- ImportQualifiedPost
+- TupleSections
 
 source-dirs: src
 

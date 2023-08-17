@@ -26,13 +26,22 @@ source-repository head
 executable schedule-maker-exe
   main-is: Main.hs
   other-modules:
-      Lib
+      CmdLineOpts
+      PPrint
+      Types
+      Validation
+      WriteXlsx
       Paths_schedule_maker
   hs-source-dirs:
       src
       app
   default-extensions:
       OverloadedStrings
+      NamedFieldPuns
+      ScopedTypeVariables
+      PartialTypeSignatures
+      ImportQualifiedPost
+      TupleSections
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
@@ -40,6 +49,7 @@ executable schedule-maker-exe
     , bytestring
     , containers
     , lens
+    , optparse-applicative
     , prettyprinter
     , prettyprinter-ansi-terminal
     , terminal-size
@@ -53,13 +63,22 @@ test-suite schedule-maker-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Lib
+      CmdLineOpts
+      PPrint
+      Types
+      Validation
+      WriteXlsx
       Paths_schedule_maker
   hs-source-dirs:
       src
       test
   default-extensions:
       OverloadedStrings
+      NamedFieldPuns
+      ScopedTypeVariables
+      PartialTypeSignatures
+      ImportQualifiedPost
+      TupleSections
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
@@ -67,6 +86,7 @@ test-suite schedule-maker-test
     , bytestring
     , containers
     , lens
+    , optparse-applicative
     , prettyprinter
     , prettyprinter-ansi-terminal
     , terminal-size

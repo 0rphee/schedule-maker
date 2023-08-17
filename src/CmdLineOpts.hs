@@ -46,7 +46,7 @@ outputPath :: Parser FilePath
 outputPath =
   strOption
     ( metavar "FILENAME"
-        <> help ".xlsx output file"
+        <> help "Write output to FILE (.xlsx)"
         <> action "directory"
         <> action "file"
         <> showDefault
