@@ -18,7 +18,7 @@ testRunExe = do
   let (Options {yamlSource, prettyPrintToStdout, outputFilePath}) = case execParserPure
         defaultPrefs
         options
-        ["test-english.yaml", "-p", "-o", "schedules.xlxs"] of
+        ["test-english.yaml", "-p", "-o", "schedules.xlsx"] of
         Success a -> a
         _ -> error "Error parsing cmdline options"
   (res :: Either ParseException [IDandSubj]) <-

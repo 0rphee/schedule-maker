@@ -14,8 +14,8 @@ import Types
 import Validation (collectValidationResults)
 import WriteXlsx (saveExcel)
 
-runExe :: IO ()
-runExe = do
+main :: IO ()
+main = do
   (Options {yamlSource, prettyPrintToStdout, outputFilePath}) <-
     execParser options
   (res :: Either ParseException [IDandSubj]) <-
@@ -35,6 +35,3 @@ runExe = do
       Right lists -> do
         when prettyPrintToStdout $ prettyRender (annotateSubjectLists lists)
         saveExcel lists outputFilePath
-
-main :: IO ()
-main = runExe
