@@ -32,6 +32,7 @@ dependencies:
 - bytestring
 - lens
 - time
+- optparse-applicative
 
 ghc-options:
 - -Wall

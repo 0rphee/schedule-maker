@@ -1,7 +1,6 @@
 module Main (main) where
 
-import Lib ( program )
+import Lib (runExe)
 
 main :: IO ()
-main = program
-
+main = runExe

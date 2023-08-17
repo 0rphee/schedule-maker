@@ -5,13 +5,15 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 
-module Lib (program) where
+module Lib (program, runExe) where
 
+import CmdLineOpts (Options (..), execParser, options)
 import Codec.Xlsx
 import Codec.Xlsx.Formatted
 import Codec.Xlsx.Types.StyleSheet
 import Control.Applicative ((<|>))
 import Control.Lens
+import Control.Monad (when)
 import Data.Aeson.Types (parseFail, prependFailure, typeMismatch)
 import Data.Bifunctor (Bifunctor (first))
 import Data.ByteString.Lazy.Char8 qualified as L
@@ -495,6 +497,27 @@ validate allSubjectsMp = foldl foldingF ([], [])
           let validCombination = fmap (\txtid -> IDandSubj (txtid, allSubjectsMp M.! txtid)) xs
            in (errs, validCombination : validSchedules)
 
+runExe :: IO ()
+runExe = do
+  (Options {yamlSource, prettyPrintToStdout, outputFilePath}) <-
+    CmdLineOpts.execParser CmdLineOpts.options
+  (res :: Either ParseException [IDandSubj]) <-
+    decodeFileEither yamlSource -- "test-english.yaml"
+  sz <- size
+  let layout = (\s -> LayoutOptions (AvailablePerLine s 1)) $
+        case sz of
+          Nothing -> 80
+          Just (Window _ w) -> w
+      prettyRender a = renderIO stdout $ layoutSmart layout a
+
+  case res of
+    Left err -> putStrLn $ prettyPrintParseException err -- yaml parsing errors
+    Right result -> case collectValidationResults result of
+      Left errs -> prettyRender (annotateErrors errs) -- validation errors
+      Right lists -> do
+        when prettyPrintToStdout $ prettyRender (annotateSubjectLists lists)
+        saveExcel lists outputFilePath
+
 program :: IO ()
 program = do
   (res :: Either ParseException [IDandSubj]) <-
@@ -511,7 +534,7 @@ program = do
       Left errs -> prettyRender (annotateErrors errs)
       Right lists -> do
         prettyRender (annotateSubjectLists lists)
-        saveExcel lists
+        saveExcel lists "schedules.xslx"
 
 collectValidationResults :: [IDandSubj] -> Either [Error] [[IDandSubj]]
 collectValidationResults xs = do
@@ -772,8 +795,8 @@ timeAnnotations =
   | v <- [minBound :: Time .. maxBound]
   ]
 
-saveExcel :: [[IDandSubj]] -> IO ()
-saveExcel xs = do
+saveExcel :: [[IDandSubj]] -> FilePath -> IO ()
+saveExcel xs outputFPath = do
   ct <- getPOSIXTime
   let xlsx = writeXlsxValidSchedules xs
-  L.writeFile "schedules.xlsx" $ fromXlsx ct xlsx
+  L.writeFile outputFPath $ fromXlsx ct xlsx
