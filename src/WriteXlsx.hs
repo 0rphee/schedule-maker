@@ -29,6 +29,12 @@ thursdayCoord = dayCoord 5
 fridayCoord :: CellValue -> RowIndex -> (RowIndex, ColumnIndex, CellValue)
 fridayCoord = dayCoord 6
 
+saturdayCoord :: CellValue -> RowIndex -> (RowIndex, ColumnIndex, CellValue)
+saturdayCoord = dayCoord 7
+
+sundayCoord :: CellValue -> RowIndex -> (RowIndex, ColumnIndex, CellValue)
+sundayCoord = dayCoord 8
+
 getRowsFromInterval :: Interval -> [RowIndex]
 getRowsFromInterval (MkInterval startingT endingT) = RowIndex . fromEnum <$> restOfTimes
   where
@@ -42,7 +48,8 @@ getRowColumnCoordsOfClass cellVal c = case c of
   WednesdayClass i -> wednesdayCoord cellVal <$> getRowsFromInterval i
   ThursdayClass i -> thursdayCoord cellVal <$> getRowsFromInterval i
   FridayClass i -> fridayCoord cellVal <$> getRowsFromInterval i
-  _ -> error "more days not implemented"
+  SaturdayClass i -> saturdayCoord cellVal <$> getRowsFromInterval i
+  SundayClass i -> sundayCoord cellVal <$> getRowsFromInterval i
 
 writeSubjInWorksheet :: Worksheet -> IDandSubj -> Worksheet
 writeSubjInWorksheet worksheet (IDandSubj (subjId, MkSubject {subjName, subjProfessor, subjclasses})) =
@@ -102,12 +109,14 @@ writeXlsxValidSchedules xs =
                  )
     initialSheetNoStyled =
       def
-        & wsCells .~ M.fromList [((y, x), def) | x <- [1 .. 6], y <- [1 .. 49]]
+        & wsCells .~ M.fromList [((y, x), def) | x <- [1 .. 8], y <- [1 .. 49]]
         & cellValueAt (1, 2) ?~ CellText "Monday"
         & cellValueAt (1, 3) ?~ CellText "Tuesday"
         & cellValueAt (1, 4) ?~ CellText "Wednesday"
         & cellValueAt (1, 5) ?~ CellText "Thursday"
         & cellValueAt (1, 6) ?~ CellText "Friday"
+        & cellValueAt (1, 7) ?~ CellText "Saturday"
+        & cellValueAt (1, 8) ?~ CellText "Sunday"
         & \ws ->
           foldl'
             (\ws' (row, col, val) -> ws' & cellValueAt (row, col) ?~ val)
