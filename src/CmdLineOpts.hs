@@ -1,12 +1,19 @@
-module CmdLineOpts (options, Options (..), execParser) where
+{-# LANGUAGE LambdaCase #-}
+
+module CmdLineOpts (options, Options (..), execParser, ExampleYamlLanguage (..)) where
 
 import Options.Applicative
 
-data Options = Options
-  { yamlSource :: FilePath
-  , prettyPrintToStdout :: Bool
-  , outputFilePath :: FilePath
-  }
+data Options
+  = NormalOptions
+      FilePath --  yamlSource
+      Bool -- prettyPrintToStdout
+      FilePath -- outputFilePath
+  | PrintExampleYaml ExampleYamlLanguage -- True english, False spanish
+
+data ExampleYamlLanguage
+  = English
+  | Spanish
 
 options :: ParserInfo Options
 options =
@@ -22,8 +29,26 @@ options =
         <> failureCode 64
     )
   where
-    opts :: Parser Options
-    opts = Options <$> yamlPath <*> prettyPrintStdout <*> outputPath
+    opts = languageParser <|> normalOpts
+
+normalOpts :: Parser Options
+normalOpts = NormalOptions <$> yamlPath <*> prettyPrintStdout <*> outputPath
+
+languageParser :: Parser Options
+languageParser =
+  PrintExampleYaml
+    <$> option
+      parseLanguage
+      ( long "print-yaml-example"
+          <> metavar "LANGUAGE"
+          <> help "Language option: 'es' (spanish) or 'en' (english)"
+      )
+  where
+    parseLanguage =
+      str >>= \case
+        "es" -> pure Spanish
+        "en" -> pure English
+        _ -> fail "Invalid language. Use 'es' or 'en'."
 
 yamlPath :: Parser FilePath
 yamlPath =

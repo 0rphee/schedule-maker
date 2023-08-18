@@ -1,5 +1,7 @@
-module PPrint (annotateSubjectLists, annotateError, annotateErrors) where
+module PPrint (annotateSubjectLists, annotateError, annotateErrors, printYaml) where
 
+import CmdLineOpts (ExampleYamlLanguage (..))
+import Data.Text.IO qualified as T
 import Prettyprinter
 import Prettyprinter.Render.Terminal
 import Types
@@ -67,3 +69,89 @@ annotateSubjectLists ss =
     (separateWith (color Magenta <> bold) '=' 2)
     (map annotateSubjectList ss)
     <> line
+
+-- print example yaml file with classes
+printYaml :: ExampleYamlLanguage -> IO ()
+printYaml lan = case lan of
+  English -> printEnglish
+  Spanish -> printSpanish
+  where
+    printEnglish =
+      T.putStrLn
+        "\n# Example yaml file with classes\n\n\
+        \# There may be multiple entries for classes with the same subject name (ex. 'Diferential Calculus'), but the resulting schedules will only have 1 class of each type.\n\
+        \- name: Subject1\n\
+        \  class-id: \"0001\" # This can be any string, but it should be unique to each class.\n\
+        \  professor: John Doe\n\
+        \  days:\n\
+        \    - day: monday\n\
+        \      start: 17:30\n\
+        \      end: 19:00\n\
+        \    - day: tuesday\n\
+        \      start: 17:30\n\
+        \      end: 19:00\n\
+        \    - day: thursday\n\
+        \      start: 17:30\n\
+        \      end: 19:00\n\
+        \    - day: wednesday\n\
+        \      start: 7:00\n\
+        \      end: 8:30\n\
+        \    - day: friday\n\
+        \      start: 7:00\n\
+        \      end: 8:30\n\
+        \    - day: saturday\n\
+        \      start: 7:00\n\
+        \      end: 8:30\n\
+        \    - day: sunday\n\
+        \      start: 7:00\n\
+        \      end: 8:30\n\
+        \- name: Subject2\n\
+        \  class-id: \"0002\"\n\
+        \  professor: Robert Cohen\n\
+        \  days:\n\
+        \    - day: monday\n\
+        \      start: 7:00\n\
+        \      end: 8:30\n\
+        \    - day: friday\n\
+        \      start: 7:00\n\
+        \      end: 8:30\n"
+    printSpanish =
+      T.putStrLn
+        "\n# Ejemplo de archivo yaml con clases\n\n\
+        \# Puede haber entradas múltiples para clases con el mismo nombre de materia (ej. 'Cálculo diferencial'), pero los horarios resultantes solo tendrán 1 clase de cada materia.\n\
+        \- nombre: Materia1\n\
+        \  id-clase: \"0001\" # Esta puede ser cualquier cadena, pero debe ser única para cada clase.\n\
+        \  profesor: Roberto Vega\n\
+        \  dias:\n\
+        \    # Los días de la semana NO pueden estar acentuados.\n\
+        \    - dia: lunes\n\
+        \      inicio: 17:30\n\
+        \      final: 19:00\n\
+        \    - dia: martes\n\
+        \      inicio: 17:30\n\
+        \      final: 19:00\n\
+        \    - dia: miercoles\n\
+        \      inicio: 7:00\n\
+        \      final: 8:30\n\
+        \    - dia: jueves\n\
+        \      inicio: 17:30\n\
+        \      final: 19:00\n\
+        \    - dia: viernes\n\
+        \      inicio: 7:00\n\
+        \      final: 8:30\n\
+        \    - dia: sabado\n\
+        \      inicio: 7:00\n\
+        \      final: 8:30\n\
+        \    - dia: domingo\n\
+        \      inicio: 7:00\n\
+        \      final: 8:30\n\
+        \- nombre: Materia2\n\
+        \  id-clase: \"0002\"\n\
+        \  profesor: Juan Miranda\n\
+        \  dias:\n\
+        \    - dia: lunes\n\
+        \      inicio: 7:00\n\
+        \      final: 8:30\n\
+        \    - dia: viernes\n\
+        \      inicio: 7:00\n\
+        \      final: 8:30\n"

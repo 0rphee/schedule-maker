@@ -1,10 +1,21 @@
-module Validation (collectValidationResults) where
+{-# LANGUAGE LambdaCase #-}
 
+module Validation (collectValidationResults, runProgLogic) where
+
+import CmdLineOpts
+import Control.Monad (when)
 import Data.Bifunctor (Bifunctor (first))
 import Data.List (tails)
 import Data.Map.Strict qualified as M
 import Data.Text qualified as T
+import Data.Yaml
+import PPrint
+import Prettyprinter
+import Prettyprinter.Render.Terminal (renderIO)
+import System.Console.Terminal.Size
+import System.IO (stdout)
 import Types
+import WriteXlsx (saveExcel)
 
 intervalsOverlap :: Interval -> Interval -> Bool
 intervalsOverlap (MkInterval a b) (MkInterval x y)
@@ -107,3 +118,24 @@ collectValidationResults xs = do
   case validationResults of
     (errorList, []) -> Left errorList
     (_, successes) -> pure successes
+
+runProgLogic :: Options -> IO ()
+runProgLogic = \case
+  PrintExampleYaml lang -> printYaml lang
+  NormalOptions yamlSource prettyPrintToStdout outputFilePath -> do
+    res <- decodeFileEither yamlSource -- "test-english.yaml"
+    sz <-
+      size >>= \case
+        Nothing -> pure 80
+        Just (Window _ w) -> pure w
+
+    let layout = LayoutOptions (AvailablePerLine sz 1)
+        prettyRender a = renderIO stdout $ layoutSmart layout a
+
+    case res of
+      Left err -> putStrLn $ prettyPrintParseException err -- yaml parsing errors
+      Right result -> case collectValidationResults result of
+        Left errs -> prettyRender (annotateErrors errs) -- validation errors
+        Right lists -> do
+          when prettyPrintToStdout $ prettyRender (annotateSubjectLists lists)
+          saveExcel lists outputFilePath

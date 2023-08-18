@@ -11,6 +11,12 @@
     - day: thursday
       start: 17:30
       end: 19:00
+    - day: saturday
+      start: 17:30
+      end: 19:00
+    - day: sunday
+      start: 17:30
+      end: 19:00
 
 - name: Person and Society
   class-id: "0002"

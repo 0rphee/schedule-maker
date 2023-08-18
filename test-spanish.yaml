@@ -11,6 +11,12 @@
     - dia: jueves
       inicio: 17:30
       final: 19:00
+    - dia: sabado
+      inicio: 17:30
+      final: 19:00
+    - dia: domingo
+      inicio: 17:30
+      final: 19:00
 
 - nombre: Persona y Sociedad
   id-clase: "0002"
