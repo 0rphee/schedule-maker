@@ -1,0 +1,19 @@
+name: test-gh-actions
+on:
+  push:
+    branches:
+      - 'gh-actions'
+    paths:
+      - '**.hs'
+      - 'stack.yaml'
+      - 'package.yaml'
+      - '**.cabal'
+jobs:
+  test:
+    runs-on: ubuntu-latest # macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: freckle/stack-action@v4
+        with: 
+          stack-arguments: --ghc-options -j8
+      - run: echo "success"
