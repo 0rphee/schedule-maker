@@ -19,4 +19,5 @@ jobs:
       - uses: freckle/stack-action@v4
         with: 
           stack-arguments: --ghc-options -j8
+          pedantic: false
       - run: echo "success"
