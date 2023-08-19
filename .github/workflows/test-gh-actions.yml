@@ -9,11 +9,27 @@ on:
       - 'package.yaml'
       - '**.cabal'
 jobs:
+
+  hlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: haskell/actions/hlint-setup@v1
+      - uses: haskell/actions/hlint-run@v2 
+
+  fourmolu:
+    runs-on: ubuntu-latest
+    needs: hlint
+    steps:
+      - uses: actions/checkout@v3
+      - uses: haskell-actions/run-fourmolu@v9
+
   test-unix:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
+    needs: fourmolu
     steps:
       - uses: actions/checkout@v3
       - uses: freckle/stack-action@v4
@@ -23,6 +39,7 @@ jobs:
 
   test-win:
     runs-on: windows-latest
+    needs: fourmolu
     steps:
       - uses: actions/checkout@v3
       - uses: freckle/stack-action@v4
