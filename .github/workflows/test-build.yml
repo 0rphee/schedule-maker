@@ -1,6 +1,4 @@
-# WHEN MODIFYING always keep the regex and annotations <!-- REPLACE_EXE_HELP -->\n```[a-z]*\n[\s\S]*?\n```\n' 
-
-name: Update README with schedule-maker-exe --help
+name: Test build and update README
 on:
   pull_request:
     paths:
@@ -8,19 +6,61 @@ on:
       - 'stack.yaml'
       - 'package.yaml'
       - '**.cabal'
-      - '.github/workflows/*'
   push:
     branches:
-      - gh-actions
+      - 'gh-actions'
     paths:
       - '**.hs'
       - 'stack.yaml'
       - 'package.yaml'
       - '**.cabal'
-      - '.github/workflows/*'
 jobs:
+
+  hlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: haskell/actions/hlint-setup@v1
+      - uses: haskell/actions/hlint-run@v2 
+
+  fourmolu:
+    runs-on: ubuntu-latest
+    needs: hlint
+    steps:
+      - uses: actions/checkout@v3
+      - uses: haskell-actions/run-fourmolu@v9
+        with:
+          # Only check the format of .hs in any directory inside cwd but not cwd.
+          pattern: |
+            */**/*.hs
+
+  test-unix:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    needs: fourmolu
+    steps:
+      - uses: actions/checkout@v3
+      - uses: freckle/stack-action@v4
+        with: 
+          stack-arguments: --ghc-options -j8
+          pedantic: false
+
+  test-win:
+    runs-on: windows-latest
+    needs: fourmolu
+    steps:
+      - uses: actions/checkout@v3
+      - uses: freckle/stack-action@v4
+        with: 
+          stack-arguments: --flag hexpat:bundle --ghc-options -j8
+          pedantic: false
+
+# WHEN MODIFYING always keep the regex and annotations <!-- REPLACE_EXE_HELP -->\n```[a-z]*\n[\s\S]*?\n```\n' 
   update-readme:
     runs-on: ubuntu-latest
+    needs: test-unix
     steps:
       - uses: actions/checkout@v3
       - name: Build exe
@@ -57,3 +97,4 @@ jobs:
           add: README.md
           committer_name: GitHub Actions
           committer_email: 41898282+github-actions[bot]@users.noreply.github.com
+
