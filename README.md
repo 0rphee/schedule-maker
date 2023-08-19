@@ -27,3 +27,4 @@ Available options:
 still a work in progress, source code here:
 https://github.com/0rphee/schedule-maker
 ```
+
