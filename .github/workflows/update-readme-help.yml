@@ -1,8 +1,19 @@
 name: Update README with schedule-maker-exe --help
 on:
+  pull_request:
+    paths:
+      - '**.hs'
+      - 'stack.yaml'
+      - 'package.yaml'
+      - '**.cabal'
   push:
     branches:
       - gh-actions
+    paths:
+      - '**.hs'
+      - 'stack.yaml'
+      - 'package.yaml'
+      - '**.cabal'
 jobs:
   update-readme:
     runs-on: ubuntu-latest
