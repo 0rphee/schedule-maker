@@ -1,5 +1,11 @@
 name: test-gh-actions
 on:
+  pull_request:
+    paths:
+      - '**.hs'
+      - 'stack.yaml'
+      - 'package.yaml'
+      - '**.cabal'
   push:
     branches:
       - 'gh-actions'
