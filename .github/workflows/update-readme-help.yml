@@ -1,4 +1,4 @@
-name: Update README Help
+name: Update README with schedule-maker-exe --help
 on:
   push:
     branches:
@@ -27,14 +27,14 @@ jobs:
       - name: Update README.md (Find and Replace)
         uses: jacobtomlinson/gha-find-replace@v3
         with:
-          find: '<!-- REPLACE_EXE_HELP -->\n```[a-z]*\n[\s\S]*?\n```'
+          find: '<!-- REPLACE_EXE_HELP -->\n```[a-z]*\n[\s\S]*?\n```\n'
           include: README.md
           regex: true
           replace: |
-            <!-- REPLACE_EXE_HELP -->
-            ```
-            ${{ env.CONTENT }}
-            ```
+              <!-- REPLACE_EXE_HELP -->
+              ```
+              ${{ env.CONTENT }}
+              ```
       - name: Add, commit and push changes
         uses: EndBug/add-and-commit@v9
         with:
