@@ -14,9 +14,9 @@ jobs:
           fast: true
           pedantic: false
           test: false
-          stack-arguments: --copy-bins --exec "stack run -- --help" > out.txt
+          stack-arguments: --exec "stack run -- --help" > out.txt
 
-      - name: Set env
+      - name: Set $CONTENT for text replacement
         run: | 
           {
             echo 'CONTENT<<EOF'
@@ -27,28 +27,29 @@ jobs:
       - name: Update README.md (Find and Replace)
         uses: jacobtomlinson/gha-find-replace@v3
         with:
-          find: '<!-- REPLACE -->\n```[a-z]*\n[\s\S]*?\n```'
+          find: '<!-- REPLACE_EXE_HELP -->\n```[a-z]*\n[\s\S]*?\n```'
           include: README.md
           regex: true
           replace: |
+            <!-- REPLACE_EXE_HELP -->
             ```
             ${{ env.CONTENT }}
             ```
-      - name: get info
-        run: | 
-          ls -a /home/runner/.local/bin/
-          ls -a
-          echo $CONTENT
-          cat README.md
-          git status
-
-      - name: Commit files
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git commit -a -m "[Bot] update README content"
-
-      - name: Push changes
-        uses: ad-m/github-push-action@master
+      - name: Add, commit and push changes
+        uses: EndBug/add-and-commit@v9
         with:
-          branch: ${{ github.ref }}          
+          message: "[Bot] update README content"
+          add: README.md
+          committer_name: GitHub Actions
+          committer_email: 41898282+github-actions[bot]@users.noreply.github.com
+
+      # - name: Commit files
+      #   run: |
+      #     git config --local user.email "github-actions[bot]@users.noreply.github.com"
+      #     git config --local user.name "github-actions[bot]"
+      #     git commit -a -m "[Bot] update README content"
+
+      # - name: Push changes
+      #   uses: ad-m/github-push-action@master
+      #   with:
+      #     branch: ${{ github.ref }}          
