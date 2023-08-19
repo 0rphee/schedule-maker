@@ -5,6 +5,7 @@ A command-line utility to create your school schedules.
 
 Creates an .xlsx file with your school schedules from a .yaml file with your classes.
 
+<!-- DO NOT REMOVE ANNOTATIONS, GITHUB ACTIONS DEPEND ON THEM -->
 <!-- REPLACE_EXE_HELP -->
 ```
 schedule-maker - a command-line utility to create your school schedules.

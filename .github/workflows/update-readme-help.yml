@@ -1,3 +1,5 @@
+# WHEN MODIFYING always keep the regex and annotations <!-- REPLACE_EXE_HELP -->\n```[a-z]*\n[\s\S]*?\n```\n' 
+
 name: Update README with schedule-maker-exe --help
 on:
   pull_request:
@@ -6,6 +8,7 @@ on:
       - 'stack.yaml'
       - 'package.yaml'
       - '**.cabal'
+      - '.github/workflows/*'
   push:
     branches:
       - gh-actions
@@ -14,6 +17,7 @@ on:
       - 'stack.yaml'
       - 'package.yaml'
       - '**.cabal'
+      - '.github/workflows/*'
 jobs:
   update-readme:
     runs-on: ubuntu-latest
