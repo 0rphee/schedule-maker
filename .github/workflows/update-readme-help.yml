@@ -1,0 +1,38 @@
+name: Update README Help
+on:
+  push:
+    branches:
+      - gh-actions
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: freckle/stack-action@v4
+        name: Build exe
+        with:
+          fast: true
+          pedantic: false
+          test: false
+          stack-arguments: --copy-bins --exec "stack run -- --help" > out.txt
+
+      - run: CONTENT=$(cat out.txt)
+        name: Get ouptut of 'schedule-maker-exe --help'
+
+      - run: | 
+          ls -a /home/runner/.local/bin/
+          ls -a
+          cat README.md
+
+      - uses: wow-actions/update-file@v1
+        name: Update README.md
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          path: README.md
+          closing_comment: <!-- [END AUTO UPDATE] -->
+          opening_comment: <!-- [START AUTO UPDATE] -->
+          commit_message: "test updating readme"
+          content: |
+            ```
+            $CONTENT
+            ```
