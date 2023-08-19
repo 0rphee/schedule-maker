@@ -5,7 +5,7 @@ A command-line utility to create your school schedules.
 
 Creates an .xlsx file with your school schedules from a .yaml file with your classes.
 
-<!-- DO NOT REMOVE ANNOTATIONS, GITHUB ACTIONS DEPEND ON THEM -->
+<!-- DO NOT REMOVE ANNOTATIONS, GITHUB ACTIONS DEPENDS ON THEM -->
 <!-- REPLACE_EXE_HELP -->
 ```
 test combined worflow
