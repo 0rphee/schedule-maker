@@ -16,23 +16,39 @@ jobs:
           test: false
           stack-arguments: --copy-bins --exec "stack run -- --help" > out.txt
 
-      - run: CONTENT=$(cat out.txt)
-        name: Get ouptut of 'schedule-maker-exe --help'
+      - name: Set env
+        run: | 
+          {
+            echo 'CONTENT<<EOF'
+            cat out.txt
+            echo EOF
+          } >> $GITHUB_ENV
 
-      - run: | 
+      - name: Update README.md (Find and Replace)
+        uses: jacobtomlinson/gha-find-replace@v3
+        with:
+          find: '<!-- REPLACE -->\n```[a-z]*\n[\s\S]*?\n```'
+          include: README.md
+          regex: true
+          replace: |
+            ```
+            ${{ env.CONTENT }}
+            ```
+      - name: get info
+        run: | 
           ls -a /home/runner/.local/bin/
           ls -a
+          echo $CONTENT
           cat README.md
+          git status
 
-      - uses: wow-actions/update-file@v1
-        name: Update README.md
+      - name: Commit files
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git commit -a -m "[Bot] update README content"
+
+      - name: Push changes
+        uses: ad-m/github-push-action@master
         with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          path: README.md
-          closing_comment: <!-- [END AUTO UPDATE] -->
-          opening_comment: <!-- [START AUTO UPDATE] -->
-          commit_message: "test updating readme"
-          content: |
-            ```
-            $CONTENT
-            ```
+          branch: ${{ github.ref }}          
