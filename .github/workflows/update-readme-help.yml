@@ -8,8 +8,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: freckle/stack-action@v4
-        name: Build exe
+      - name: Build exe
+        uses: freckle/stack-action@v4
         with:
           fast: true
           pedantic: false
