@@ -56,7 +56,7 @@ default-extensions:
 source-dirs: src
 
 executables:
-  schedule-maker-exe:
+  schedule-maker:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
