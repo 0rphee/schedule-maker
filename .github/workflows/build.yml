@@ -44,7 +44,8 @@ jobs:
       - uses: actions/checkout@v3
       - uses: freckle/stack-action@v4
         with: 
-          stack-arguments: --ghc-options -j8
+          fast: true
+          stack-arguments: -j2
           pedantic: false
 
   test-win:
@@ -54,7 +55,8 @@ jobs:
       - uses: actions/checkout@v3
       - uses: freckle/stack-action@v4
         with: 
-          stack-arguments: --flag hexpat:bundle --ghc-options -j8
+          fast: true
+          stack-arguments: -j2 --flag hexpat:bundle
           pedantic: false
 
 # WHEN MODIFYING always keep the regex and annotations <!-- REPLACE_EXE_HELP -->\n```[a-z]*\n[\s\S]*?\n```\n' 
@@ -69,7 +71,7 @@ jobs:
           fast: true
           pedantic: false
           test: false
-          stack-arguments: --exec "stack run -- --help" > out.txt
+          stack-arguments: -j2 --exec "stack run -- --help" > out.txt
 
       - name: Set $CONTENT for text replacement
         run: | 
