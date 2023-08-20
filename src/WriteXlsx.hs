@@ -62,7 +62,7 @@ writeSubjInWorksheet worksheet (IDandSubj (subjId, MkSubject {subjName, subjProf
     worksheetPositionsOfClasses = concatMap (getRowColumnCoordsOfClass cellMsg) subjclasses
 
     cellMsg :: CellValue
-    cellMsg = CellText $ subjName <> "\n(" <> subjId <> ")\n" <> subjProfessor
+    cellMsg = CellText $ subjName <> " (" <> subjId <> ") " <> subjProfessor
 
 writeValidSchedule :: Worksheet -> [IDandSubj] -> Worksheet
 writeValidSchedule = foldl' writeSubjInWorksheet
