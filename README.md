@@ -8,11 +8,10 @@ Creates an .xlsx file with your school schedules from a .yaml file with your cla
 <!-- DO NOT REMOVE ANNOTATIONS, GITHUB ACTIONS DEPENDS ON THEM -->
 <!-- REPLACE_EXE_HELP -->
 ```
-test combined worflow
 schedule-maker - a command-line utility to create your school schedules.
 
-Usage: schedule-maker-exe (--print-yaml-example LANGUAGE | FILENAME 
-                            [-p|--pretty-print] [-o|--output FILENAME])
+Usage: schedule-maker (--print-yaml-example LANGUAGE | FILENAME 
+                        [-p|--pretty-print] [-o|--output FILENAME])
 
   Create an .xlsx file with your school schedules from a .yaml file with your
   classes.
