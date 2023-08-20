@@ -1,0 +1,26 @@
+name: Build and upload artifacts
+on: workflow_dispatch
+
+jobs:
+
+  build-and-upload:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: freckle/stack-action@v4
+        with: 
+          fast: true
+          pedantic: false
+          test: false
+          stack-arguments: --ghc-options=-j8 --local-bin-path=$(pwd) --copy-bins
+
+      - name: list and see
+        run: ls -a
+
+      - name: Archive production artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: schedule-maker-bin
+          if-no-files-found: error
+          path: |
+            schedule-maker
