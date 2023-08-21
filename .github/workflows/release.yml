@@ -5,7 +5,7 @@ on:
     branches:
       - 'gh-actions'
     paths:
-      - '.github/**'
+      - '.github/workflows/release.yml'
 
 
 jobs:

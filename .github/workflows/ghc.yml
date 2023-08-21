@@ -16,6 +16,7 @@ jobs:
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
           ghcup install ghc 9.4.5
+          source /Users/runner/.ghcup/env
 
           # /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
           # brew install autoconf automake python sphinx-doc
@@ -23,5 +24,5 @@ jobs:
 
       - name: build
         run: |
-          ghcup compile ghc -j 3 -v 9.4.5 -b 9.4.5 -x aarch64-apple-darwin
+          ghcup compile ghc -v 9.4.5 -b 9.4.5 -x aarch64-apple-darwin
 
