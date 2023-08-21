@@ -1,0 +1,28 @@
+name: Build and upload artifacts
+on: 
+  workflow_dispatch:
+  push:
+    branches:
+      - 'gh-actions'
+    paths:
+      - '.github/**'
+
+
+jobs:
+
+  build-and-upload:
+    runs-on: macos-latest
+    steps:
+      - name: setup ghcup and homebrew
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
+          ghcup install ghc 9.4.5
+
+          # /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+          # brew install autoconf automake python sphinx-doc
+          # export PATH="/opt/homebrew/opt/sphinx-doc/bin:$PATH"
+
+      - name: build
+        run: |
+          ghcup compile ghc -j 3 -v 9.4.5 -b 9.4.5 -x aarch64-apple-darwin
+
