@@ -17,7 +17,7 @@ jobs:
       - name: setup ghcup and homebrew
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
-          ghcup install ghc 9.4.5
+          ghcup install ghc 9.0.2
           source /Users/runner/.ghcup/env
 
           # /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -26,6 +26,6 @@ jobs:
 
       - name: build
         run: |
-          ghcup compile ghc -v ${{ inputs.target-version }} -b 9.4.5 ${{ inputs.compilation-flags }} -x aarch64-apple-darwin 
+          ghcup compile ghc -v ${{ inputs.target-version }} -b 9.0.2 ${{ inputs.compilation-flags }} -x aarch64-apple-darwin 
 
 
