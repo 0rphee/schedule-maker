@@ -1,16 +1,15 @@
-name: Build and upload artifacts
+name: Try building ghc
 on: 
   workflow_dispatch:
   push:
     branches:
       - 'gh-actions'
     paths:
-      - '.github/**'
-
+      - '.github/workflows/ghc.yml'
 
 jobs:
 
-  build-and-upload:
+  build:
     runs-on: macos-latest
     steps:
       - name: setup ghcup and homebrew
