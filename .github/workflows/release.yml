@@ -51,6 +51,13 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
+
+      - name: Cache dependencies (Windows)
+        uses: actions/cache@v3
+        with:
+          path: C:\sr # 'C:\Users\runneradmin\AppData\Roaming\stack'
+          key: ${{ runner.os }}-store-${{ hashFiles('stack.yaml.lock') }}-${{ hashFiles('schedule-maker.cabal') }}
+
       - uses: freckle/stack-action@v4
         with: 
           fast: false
