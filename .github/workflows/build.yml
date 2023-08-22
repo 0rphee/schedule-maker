@@ -36,31 +36,6 @@ jobs:
           pattern: |
             */**/*.hs
 
-  # test-unix:
-  #   strategy:
-  #     matrix:
-  #       os: [ubuntu-latest, macos-latest]
-  #   runs-on: ${{ matrix.os }}
-  #   needs: fourmolu
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     - uses: freckle/stack-action@v4
-  #       with: 
-  #         fast: true
-  #         stack-arguments: -j2
-  #         pedantic: false
-
-  # test-win:
-  #   runs-on: windows-latest
-  #   needs: fourmolu
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     - uses: freckle/stack-action@v4
-  #       with: 
-  #         fast: true
-  #         stack-arguments: -j2 --flag hexpat:bundle
-  #         pedantic: false
-
   build-binaries:
     name: Build and test binaries (${{ matrix.os }})
     needs: fourmolu
@@ -156,11 +131,28 @@ jobs:
               ```
               ${{ env.CONTENT }}
               ```
-      - name: Add, commit and push changes
-        uses: EndBug/add-and-commit@v9
-        with:
-          message: "[Bot] update README content"
-          add: README.md
-          committer_name: GitHub Actions
-          committer_email: 41898282+github-actions[bot]@users.noreply.github.com
 
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          commit-message: "[Bot] update README content"
+          committer: GitHub Actions <41898282+github-actions[bot]@users.noreply.github.com>
+          delete-branch: true
+          title: "[Bot] update README content"
+          body: Update README.md
+
+      - name: Automatically Merge PR
+        uses: plm9606/automerge_actions@1.2.3
+        with:
+          label-name: automerge
+          reviewers-number: 0
+          merge-method: merge
+          auto-delete: true
+
+      # - name: Add, commit and push changes
+      #   uses: EndBug/add-and-commit@v9
+      #   with:
+      #     message: "[Bot] update README content"
+      #     add: README.md
+      #     committer_name: GitHub Actions
+      #     committer_email: 41898282+github-actions[bot]@users.noreply.github.com
