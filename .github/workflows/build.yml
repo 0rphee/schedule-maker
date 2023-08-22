@@ -1,4 +1,4 @@
-name: Test build and update README
+name: Build, test and update README
 on:
   pull_request:
     paths:
@@ -14,6 +14,8 @@ on:
       - 'stack.yaml'
       - 'package.yaml'
       - '**.cabal'
+      - '.github/workflows/build.yml'
+
 jobs:
 
   hlint:
@@ -34,35 +36,95 @@ jobs:
           pattern: |
             */**/*.hs
 
-  test-unix:
+  # test-unix:
+  #   strategy:
+  #     matrix:
+  #       os: [ubuntu-latest, macos-latest]
+  #   runs-on: ${{ matrix.os }}
+  #   needs: fourmolu
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: freckle/stack-action@v4
+  #       with: 
+  #         fast: true
+  #         stack-arguments: -j2
+  #         pedantic: false
+
+  # test-win:
+  #   runs-on: windows-latest
+  #   needs: fourmolu
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: freckle/stack-action@v4
+  #       with: 
+  #         fast: true
+  #         stack-arguments: -j2 --flag hexpat:bundle
+  #         pedantic: false
+
+  build-binaries:
+    name: Build and test binaries
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
-    needs: fourmolu
+        include:
+          - os: ubuntu-latest
+            stack-build-args: build -j2 --local-bin-path=$(pwd) --copy-bins --ghc-options=-O2
+          - os: macos-latest
+            stack-build-args: build -j2 --local-bin-path=$(pwd) --copy-bins --ghc-options=-O2
+          - os: windows-latest
+            stack-build-args: build -j2 --flag hexpat:bundle --local-bin-path=$(pwd) --copy-bins --ghc-options=-O2 
     steps:
-      - uses: actions/checkout@v3
-      - uses: freckle/stack-action@v4
-        with: 
-          fast: true
-          stack-arguments: -j2
-          pedantic: false
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
-  test-win:
-    runs-on: windows-latest
-    needs: fourmolu
-    steps:
-      - uses: actions/checkout@v3
-      - uses: freckle/stack-action@v4
-        with: 
-          fast: true
-          stack-arguments: -j2 --flag hexpat:bundle
-          pedantic: false
+      - uses: haskell/actions/setup@v2
+        with:
+          ghc-version: '9.4.5'
+          enable-stack: true
+          stack-no-global: true
+
+      # - name: Install stack (MacOS)
+      #   run: curl -sSL https://get.haskellstack.org/ | sh
+      #   if: matrix.os == 'macos-10.15'
+
+      # - name: Install stack (Windows)
+      #   run: choco install haskell-stack
+      #   if: matrix.os == 'windows-2019'
+
+      # CACHING
+      - name: Cache dependencies (Unix)
+        uses: actions/cache@v3
+        if: matrix.os != 'windows-latest'
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-store-${{ hashFiles('stack.yaml.lock') }}-${{ hashFiles('schedule-maker.cabal') }}
+
+      - name: Cache dependencies (Windows)
+        uses: actions/cache@v3
+        if: matrix.os == 'windows-latest'
+        with:
+          path: C:\sr # 'C:\Users\runneradmin\AppData\Roaming\stack'
+          key: ${{ runner.os }}-store-${{ hashFiles('stack.yaml.lock') }}-${{ hashFiles('schedule-maker.cabal') }}
+
+      - name: Cache GHC (Windows)
+        uses: actions/cache@v3
+        if: matrix.os == 'windows-latest'
+        with:
+          path: 'C:\Users\runneradmin\AppData\Local\Programs\stack'
+          key: ghc-${{ hashFiles('stack.yaml.lock') }}
+
+      # BUILD
+      - name: Build (${{ runner.os }})
+        run: stack ${{ matrix.stack-build-args }}
+
+      # RUN TESTS
+      - name: Run tests (${{ runner.os }})
+        run: stack test
 
 # WHEN MODIFYING always keep the regex and annotations <!-- REPLACE_EXE_HELP -->\n```[a-z]*\n[\s\S]*?\n```\n' 
   update-readme:
     runs-on: ubuntu-latest
-    needs: test-unix
+    needs: build-binaries
     steps:
       - uses: actions/checkout@v3
       - name: Build exe
