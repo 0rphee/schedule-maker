@@ -63,16 +63,17 @@ jobs:
 
   build-binaries:
     name: Build and test binaries
+    needs: fourmolu
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include:
           - os: ubuntu-latest
-            stack-build-args: build -j2 --local-bin-path=$(pwd) --copy-bins --ghc-options=-O2
+            stack-build-args: build -j2 --ghc-options=-O2
           - os: macos-latest
-            stack-build-args: build -j2 --local-bin-path=$(pwd) --copy-bins --ghc-options=-O2
+            stack-build-args: build -j3 --ghc-options=-O2
           - os: windows-latest
-            stack-build-args: build -j2 --flag hexpat:bundle --local-bin-path=$(pwd) --copy-bins --ghc-options=-O2 
+            stack-build-args: build -j2 --flag hexpat:bundle --ghc-options=-O2
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
