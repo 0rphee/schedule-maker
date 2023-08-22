@@ -31,6 +31,12 @@ jobs:
           stack-no-global: true
 
       # CACHING
+      - name: Cache .stack-work
+        uses: actions/cache@v3
+        with:
+          path: .stack-work/
+          key: ${{ runner.os }}-store${{ hashFiles('stack.yaml.lock') }}-${{ hashFiles('schedule-maker.cabal') }}
+
       - name: Cache dependencies (Unix)
         uses: actions/cache@v3
         if: matrix.os != 'windows-latest'
