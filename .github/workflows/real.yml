@@ -42,7 +42,7 @@ jobs:
         uses: actions/cache@v3
         if: matrix.os == 'windows-latest'
         with:
-          path: 'C:\Users\runneradmin\AppData\Roaming\stack'
+          path: C:\sr # 'C:\Users\runneradmin\AppData\Roaming\stack'
           key: ${{ runner.os }}-store-${{ hashFiles('generator/stack.yaml.lock') }}-${{ hashFiles('generator/generator.cabal') }}
 
       - name: Cache GHC (Windows)
@@ -58,7 +58,7 @@ jobs:
 
       - name: Get Windows stack root
         if: matrix.os == 'windows-latest'
-        run: stack path --stack-root
+        run: stack path
         shell: bash
 
       - name: Build (Windows)
