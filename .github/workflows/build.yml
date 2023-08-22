@@ -1,0 +1,158 @@
+name: Build, test and update README
+on:
+  pull_request_target:
+    branches:
+      - 'main'
+    paths:
+      - '**.hs'
+      - 'stack.yaml'
+      - 'package.yaml'
+      - '**.cabal'
+  push:
+    branches:
+      - 'main'
+    paths:
+      - '**.hs'
+      - 'stack.yaml'
+      - 'package.yaml'
+      - '**.cabal'
+
+jobs:
+
+  hlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: haskell/actions/hlint-setup@v1
+      - uses: haskell/actions/hlint-run@v2 
+
+  fourmolu:
+    runs-on: ubuntu-latest
+    needs: hlint
+    steps:
+      - uses: actions/checkout@v3
+      - uses: haskell-actions/run-fourmolu@v9
+        with:
+          # Only check the format of .hs in any directory inside cwd but not cwd.
+          pattern: |
+            */**/*.hs
+
+  build-binaries:
+    name: Build and test binaries (${{ matrix.os }})
+    needs: fourmolu
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            stack-build-args: -j2
+          - os: macos-latest
+            stack-build-args: -j3
+          - os: windows-latest
+            stack-build-args: -j2 --flag hexpat:bundle
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - uses: haskell/actions/setup@v2
+        with:
+          ghc-version: '9.4.5'
+          enable-stack: true
+          stack-no-global: true
+
+      # CACHING
+      - name: Cache dependencies (Unix)
+        uses: actions/cache@v3
+        if: matrix.os != 'windows-latest'
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-store-${{ hashFiles('stack.yaml.lock') }}-${{ hashFiles('schedule-maker.cabal') }}
+
+      - name: Cache dependencies (Windows)
+        uses: actions/cache@v3
+        if: matrix.os == 'windows-latest'
+        with:
+          path: C:\sr # 'C:\Users\runneradmin\AppData\Roaming\stack'
+          key: ${{ runner.os }}-store-${{ hashFiles('stack.yaml.lock') }}-${{ hashFiles('schedule-maker.cabal') }}
+
+      - name: Cache GHC (Windows)
+        uses: actions/cache@v3
+        if: matrix.os == 'windows-latest'
+        with:
+          path: 'C:\Users\runneradmin\AppData\Local\Programs\stack'
+          key: ghc-${{ hashFiles('stack.yaml.lock') }}
+
+      # BUILD
+      - name: Build (${{ runner.os }})
+        run: stack build --fast ${{ matrix.stack-build-args }} 
+
+      # RUN TESTS
+      - name: Run tests (${{ runner.os }})
+        run: stack test
+
+# WHEN MODIFYING always keep the regex and annotations <!-- REPLACE_EXE_HELP -->\n```[a-z]*\n[\s\S]*?\n```\n' 
+  update-readme:
+    name: Update README.md with '--help' exe output
+    runs-on: ubuntu-latest
+    needs: build-binaries
+    permissions:   
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build exe
+        uses: freckle/stack-action@v4
+        with:
+          fast: true
+          pedantic: false
+          test: false
+          stack-arguments: -j2 --exec "stack run -- --help" > out.txt
+
+      - name: Set $CONTENT for text replacement
+        run: | 
+          {
+            echo 'CONTENT<<EOF'
+            cat out.txt
+            echo EOF
+          } >> $GITHUB_ENV
+
+          rm out.txt
+
+      - name: Update README.md (Find and Replace)
+        uses: jacobtomlinson/gha-find-replace@v3
+        with:
+          find: '<!-- REPLACE_EXE_HELP -->\n```[a-z]*\n[\s\S]*?\n```\n'
+          include: README.md
+          regex: true
+          replace: |
+              <!-- REPLACE_EXE_HELP -->
+              ```
+              ${{ env.CONTENT }}
+              ```
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        id: create-pr
+        with:
+          commit-message: "[Bot] update README content"
+          committer: GitHub Actions <41898282+github-actions[bot]@users.noreply.github.com>
+          delete-branch: true
+          title: "[Bot] update README content"
+          body: Update README.md
+
+      - name: Automatically Merge PR
+        uses: plm9606/automerge_actions@1.2.3
+        if: steps.create-pr.outputs.pull-request-number
+        with:
+          label-name: automerge
+          reviewers-number: 0
+          merge-method: merge
+          auto-delete: true
+          github-token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
+      # - name: Add, commit and push changes
+      #   uses: EndBug/add-and-commit@v9
+      #   with:
+      #     message: "[Bot] update README content"
+      #     add: README.md
+      #     committer_name: GitHub Actions
+      #     committer_email: 41898282+github-actions[bot]@users.noreply.github.com

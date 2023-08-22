@@ -4,12 +4,12 @@ import CmdLineOpts
 import Options.Applicative
 import Validation
 
-testRunExe :: IO ()
-testRunExe = do
+testRunExe :: [String] -> IO ()
+testRunExe args = do
   let opts = case execParserPure
         defaultPrefs
         options
-        ["test-english.yaml", "-p", "-o", "schedules.xlsx"] of
+        args of
         Success a -> a
         _ -> error "Error parsing cmdline options"
   runProgLogic opts
@@ -17,4 +17,10 @@ testRunExe = do
 main :: IO ()
 main = do
   putStrLn "Open 'schedules.xslx' to check program output"
-  testRunExe
+  testRunExe ["test-english.yaml", "-p", "-o", "schedules.xlsx"]
+
+  putStrLn "Print example spanish yaml file"
+  testRunExe ["--print-yaml-example=es"]
+
+  putStrLn "Print example english yaml file"
+  testRunExe ["--print-yaml-example=en"]

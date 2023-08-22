@@ -23,7 +23,7 @@ source-repository head
   type: git
   location: https://github.com/0rphee/schedule-maker
 
-executable schedule-maker-exe
+executable schedule-maker
   main-is: Main.hs
   other-modules:
       CmdLineOpts

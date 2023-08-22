@@ -62,7 +62,7 @@ writeSubjInWorksheet worksheet (IDandSubj (subjId, MkSubject {subjName, subjProf
     worksheetPositionsOfClasses = concatMap (getRowColumnCoordsOfClass cellMsg) subjclasses
 
     cellMsg :: CellValue
-    cellMsg = CellText $ subjName <> "\n(" <> subjId <> ")\n" <> subjProfessor
+    cellMsg = CellText $ subjName <> " (" <> subjId <> ") " <> subjProfessor
 
 writeValidSchedule :: Worksheet -> [IDandSubj] -> Worksheet
 writeValidSchedule = foldl' writeSubjInWorksheet
@@ -126,6 +126,28 @@ writeXlsxValidSchedules xs =
     initialSheetStyled =
       initialSheetNoStyled
         & wsCells .~ finalCellMap
+        & wsColumnsProperties
+          .~ [ -- hour column
+               ColumnsProperties
+                { cpMin = 1
+                , cpMax = 1
+                , cpWidth = Just 6
+                , cpStyle = Nothing
+                , cpHidden = False
+                , cpCollapsed = False
+                , cpBestFit = True
+                }
+             , -- rest of columns
+               ColumnsProperties
+                { cpMin = 2
+                , cpMax = 8
+                , cpWidth = Just 20
+                , cpStyle = Nothing
+                , cpHidden = False
+                , cpCollapsed = False
+                , cpBestFit = True
+                }
+             ]
 
 timeAnnotations :: [(RowIndex, ColumnIndex, CellValue)]
 timeAnnotations =

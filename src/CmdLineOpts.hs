@@ -23,7 +23,7 @@ options =
         <> header
           "schedule-maker - a command-line utility to create your school schedules."
         <> footer
-          "still a work in progress, source code here: https://codeberg.org/0rphee/schedule-maker."
+          "still a work in progress, source code here: https://github.com/0rphee/schedule-maker"
         <> progDesc
           "Create an .xlsx file with your school schedules from a .yaml file with your classes."
         <> failureCode 64

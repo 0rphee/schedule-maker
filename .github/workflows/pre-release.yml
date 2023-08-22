@@ -1,0 +1,119 @@
+name: Create pre-release
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+
+  build-binaries:
+    name: Build and test binaries (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            stack-build-args: -j2                            
+          - os: macos-latest
+            stack-build-args: -j3                            
+          - os: windows-latest
+            stack-build-args: -j2 --flag hexpat:bundle 
+    steps:
+
+      # SETUP
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - uses: haskell/actions/setup@v2
+        with:
+          ghc-version: '9.4.5'
+          enable-stack: true
+          stack-no-global: true
+
+      # CACHING
+      - name: Cache dependencies (Unix)
+        uses: actions/cache@v3
+        if: matrix.os != 'windows-latest'
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-store-${{ hashFiles('stack.yaml.lock') }}-${{ hashFiles('schedule-maker.cabal') }}
+
+      - name: Cache dependencies (Windows)
+        uses: actions/cache@v3
+        if: matrix.os == 'windows-latest'
+        with:
+          path: C:\sr # 'C:\Users\runneradmin\AppData\Roaming\stack'
+          key: ${{ runner.os }}-store-${{ hashFiles('stack.yaml.lock') }}-${{ hashFiles('schedule-maker.cabal') }}
+
+      - name: Cache GHC (Windows)
+        uses: actions/cache@v3
+        if: matrix.os == 'windows-latest'
+        with:
+          path: 'C:\Users\runneradmin\AppData\Local\Programs\stack'
+          key: ghc-${{ hashFiles('stack.yaml.lock') }}
+
+      # BUILD
+      - name: Build (${{ runner.os }})
+        shell: bash
+        run: stack build --local-bin-path="$(pwd)/schedule-maker-x86_64-${{ runner.os }}" --copy-bins --ghc-options=-O2 ${{ matrix.stack-build-args }} 
+
+      # UPLOAD BINARIES
+      - name: Compress dirs (Unix)
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        run: zip -r schedule-maker-x86_64-${{ runner.os }}.zip schedule-maker-x86_64-${{ runner.os }}
+
+      - name: Compress dirs (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: Compress-Archive -Path "schedule-maker-x86_64-${{ runner.os }}" -DestinationPath "schedule-maker-x86_64-${{ runner.os }}.zip"
+
+
+      - name: Upload artifact (${{ runner.os }})
+        uses: actions/upload-artifact@v3
+        with:
+          name: schedule-maker-x86_64-${{ runner.os }}
+          path: schedule-maker-x86_64-${{ runner.os }}.zip
+          if-no-files-found: error
+ 
+  pre-release:
+    name: "Pre Release"
+    needs: build-binaries
+    permissions:
+      contents: write
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: actions/download-artifact@v3
+
+      - name: Check artifacts
+        run: ls -R
+
+      # - name: Create zip files
+      #   run: |
+      #     for dir in */; do
+      #         dir_name=$(basename "$dir")
+      #         zip -r "$dir_name.zip" "$dir_name"
+      #     done
+
+      # - name: Check zip files
+      #   run: ls -R
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Pre-release ${{ github.sha }}
+          draft: true
+          prerelease: true
+          fail_on_unmatched_files: true
+          generate_release_notes: true
+          # files: schedule-maker-x86_64-*.zip
+
+      # - uses: "marvinpinto/action-automatic-releases@latest"
+      #   with:
+      #     repo_token: "${{ secrets.GITHUB_TOKEN }}"
+      #     automatic_release_tag: "latest"
+      #     prerelease: true
+      #     title: "Development Build"
+      #     files: |
+      #       LICENSE.txt
+      #       *.jar
