@@ -1,9 +1,8 @@
 name: Create pre-release
-
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
 

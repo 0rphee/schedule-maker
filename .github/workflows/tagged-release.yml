@@ -1,5 +1,4 @@
 name: Create tagged release
-
 on:
   push:
     tags:

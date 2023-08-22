@@ -1,6 +1,8 @@
 name: Build, test and update README
 on:
-  pull_request:
+  pull_request_target:
+    branches:
+      - 'main'
     paths:
       - '**.hs'
       - 'stack.yaml'
@@ -8,13 +10,12 @@ on:
       - '**.cabal'
   push:
     branches:
-      - 'gh-actions'
+      - 'main'
     paths:
       - '**.hs'
       - 'stack.yaml'
       - 'package.yaml'
       - '**.cabal'
-      - '.github/workflows/build.yml'
 
 jobs:
 
@@ -44,11 +45,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            stack-build-args: build -j2 --ghc-options=-O2
+            stack-build-args: -j2
           - os: macos-latest
-            stack-build-args: build -j3 --ghc-options=-O2
+            stack-build-args: -j3
           - os: windows-latest
-            stack-build-args: build -j2 --flag hexpat:bundle --ghc-options=-O2
+            stack-build-args: -j2 --flag hexpat:bundle
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -58,14 +59,6 @@ jobs:
           ghc-version: '9.4.5'
           enable-stack: true
           stack-no-global: true
-
-      # - name: Install stack (MacOS)
-      #   run: curl -sSL https://get.haskellstack.org/ | sh
-      #   if: matrix.os == 'macos-10.15'
-
-      # - name: Install stack (Windows)
-      #   run: choco install haskell-stack
-      #   if: matrix.os == 'windows-2019'
 
       # CACHING
       - name: Cache dependencies (Unix)
@@ -91,7 +84,7 @@ jobs:
 
       # BUILD
       - name: Build (${{ runner.os }})
-        run: stack ${{ matrix.stack-build-args }}
+        run: stack build --fast ${{ matrix.stack-build-args }} 
 
       # RUN TESTS
       - name: Run tests (${{ runner.os }})
