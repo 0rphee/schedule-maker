@@ -1,17 +1,21 @@
 name: Build and upload artifacts
 on: 
-  workflow_dispatch:
   push:
     branches:
       - 'gh-actions'
     paths:
       - '.github/workflows/release.yml'
+    
+    # tags:
+      # - 'v[0-9]+.[0-9]+.[0-9]+'
 
 
 jobs:
-
-  build-and-upload:
-    runs-on: macos-latest
+  build-upload-unix:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
       - uses: freckle/stack-action@v4
@@ -21,12 +25,72 @@ jobs:
           test: false
           stack-arguments: -j2 --local-bin-path=$(pwd) --copy-bins
 
-      - name: list and see
-        run: ls -a
+      - name: Archive production artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          path: schedule-maker
+          name: schedule-maker-bin
+          if-no-files-found: error
+  build-upload-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: freckle/stack-action@v4
+        with: 
+          fast: false
+          pedantic: false
+          test: false
+          stack-arguments: -j2 --flag hexpat:bundle --local-bin-path=${{ github.workspace }} --copy-bins
 
       - name: Archive production artifacts
         uses: actions/upload-artifact@v3
         with:
+          path: schedule-maker.exe
           name: schedule-maker-bin
           if-no-files-found: error
-          path: schedule-maker 
+
+  create-release:
+    runs-on: ubuntu-latest
+    needs: [build-upload-unix, build-upload-windows]
+    steps:
+
+      - uses: actions/download-artifact@v3
+
+      - name: Check artifacts
+        run: ls -R
+
+      # - name: Download artifact
+      #   id: download-artifact
+      #   uses: dawidd6/action-download-artifact@v2
+      #   with:
+      #     workflow_conclusion: success
+      #     branch: gh-actions
+      #     # Optional, defaults to all types
+      #     # event: push
+
+      #     # Optional, a directory where to extract artifact(s), defaults to the current directory
+      #     # path: extract_here
+
+      #     # Optional, check the workflow run to whether it has an artifact
+      #     # then will get the last available artifact from the previous workflow
+      #     # default false, just try to download from the last one
+      #     check_artifacts: false
+
+      #     # Optional, search for the last workflow run whose stored an artifact named as in `name` input
+      #     # default false
+      #     # search_artifacts: schedule-maker-bin
+
+      #     # Optional, choose to skip unpacking the downloaded artifact(s)
+      #     # default false
+      #     skip_unpack: false
+      #     # Optional, choose how to exit the action if no artifact is found
+      #     # can be one of:
+      #     #  "fail", "warn", "ignore"
+      #     # default fail
+      #     if_no_artifact_found: fail
+
+      # - name: Create Release
+      #   uses: ncipollo/release-action@v1.12.0
+      #   with:
+      #     artifactErrorsFailBuild: true
+      #     draft: true
