@@ -19,11 +19,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            stack-build-args: build -j2 --local-bin-path=$(pwd) --copy-bins --ghc-options=-O2
+            stack-build-args: -j2                            
           - os: macos-latest
-            stack-build-args: build -j2 --local-bin-path=$(pwd) --copy-bins --ghc-options=-O2
+            stack-build-args: -j3                            
           - os: windows-latest
-            stack-build-args: build -j2 --flag hexpat:bundle --local-bin-path=$(pwd) --copy-bins --ghc-options=-O2 
+            stack-build-args: -j2 --flag hexpat:bundle 
     steps:
 
       # SETUP
@@ -60,23 +60,26 @@ jobs:
 
       # BUILD
       - name: Build (${{ runner.os }})
-        run: stack ${{ matrix.stack-build-args }}
+        shell: bash
+        run: stack build --local-bin-path="$(pwd)/schedule-maker-x86_64-${{ runner.os }}" --copy-bins --ghc-options=-O2 ${{ matrix.stack-build-args }} 
 
       # UPLOAD BINARIES
-      - name: Upload artifact (Unix)
-        uses: actions/upload-artifact@v3
+      - name: Compress dirs (Unix)
         if: matrix.os != 'windows-latest'
-        with:
-          name: schedule-maker-${{ runner.os }}
-          path: schedule-maker
-          if-no-files-found: error
+        shell: bash
+        run: zip -r schedule-maker-x86_64-${{ runner.os }}.zip schedule-maker-x86_64-${{ runner.os }}
 
-      - name: Upload artifact (Windows)
-        uses: actions/upload-artifact@v3
+      - name: Compress dirs (Windows)
         if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: Compress-Archive -Path "schedule-maker-x86_64-${{ runner.os }}" -DestinationPath "schedule-maker-x86_64-${{ runner.os }}.zip"
+
+
+      - name: Upload artifact (${{ runner.os }})
+        uses: actions/upload-artifact@v3
         with:
-          name: schedule-maker-${{ runner.os }}
-          path: schedule-maker.exe
+          name: schedule-maker-x86_64-${{ runner.os }}
+          path: schedule-maker-x86_64-${{ runner.os }}.zip
           if-no-files-found: error
  
   pre-release:
@@ -91,17 +94,25 @@ jobs:
       - name: Check artifacts
         run: ls -R
 
+      # - name: Create zip files
+      #   run: |
+      #     for dir in */; do
+      #         dir_name=$(basename "$dir")
+      #         zip -r "$dir_name.zip" "$dir_name"
+      #     done
+
+      # - name: Check zip files
+      #   run: ls -R
+
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
+          name: Pre-release ${{ github.sha }}
           draft: true
           prerelease: true
-          fails_on_unmatched_files: true
+          fail_on_unmatched_files: true
           generate_release_notes: true
-          files: |
-            schedule-maker-macOS/*
-            schedule-maker-Windows/*
-            schedule-maker-Linux/*
+          # files: schedule-maker-x86_64-*.zip
 
       # - uses: "marvinpinto/action-automatic-releases@latest"
       #   with:
