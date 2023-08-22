@@ -10,7 +10,7 @@ on:
 
 jobs:
   build-binaries:
-    name: Build and test binaries
+    name: Build and test binaries (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
