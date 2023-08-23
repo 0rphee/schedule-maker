@@ -97,14 +97,37 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@v3
-      - name: Build exe
-        uses: freckle/stack-action@v4
-        with:
-          fast: true
-          pedantic: false
-          test: false
-          stack-arguments: -j2 --exec "stack run -- --help" > out.txt
+      # - name: Build exe
+      #   uses: freckle/stack-action@v4
+      #   with:
+      #     fast: true
+      #     pedantic: false
+      #     test: false
+      #     stack-arguments: -j2 --exec "stack run -- --help" > out.txt
 
+      - uses: haskell/actions/setup@v2
+        with:
+          ghc-version: '9.4.5'
+          enable-stack: true
+          stack-no-global: true
+
+      # CACHING
+      - name: Cache .stack-work
+        uses: actions/cache@v3
+        with:
+          path: .stack-work/
+          key: ${{ runner.os }}-store${{ hashFiles('stack.yaml.lock') }}-${{ hashFiles('schedule-maker.cabal') }}
+
+      - name: Cache dependencies (Unix)
+        uses: actions/cache@v3
+        if: matrix.os != 'windows-latest'
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-store-${{ hashFiles('stack.yaml.lock') }}-${{ hashFiles('schedule-maker.cabal') }}
+
+      - name: Build (${{ runner.os }})
+        run: stack build --fast -j2 --exec "stack run -- --help" > out.txt
+      
       - name: Set $CONTENT for text replacement
         run: | 
           {

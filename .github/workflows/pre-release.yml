@@ -3,6 +3,11 @@ on:
   push:
     branches:
       - main
+    paths:
+      - '**.hs'
+      - 'stack.yaml'
+      - 'package.yaml'
+      - '**.cabal'
 
 jobs:
 
@@ -112,7 +117,7 @@ jobs:
           prerelease: true
           fail_on_unmatched_files: true
           generate_release_notes: true
-          # files: schedule-maker-x86_64-*.zip
+          files: 'schedule-maker-x86_64-**/schedule-maker-x86_64-*'
 
       # - uses: "marvinpinto/action-automatic-releases@latest"
       #   with:
