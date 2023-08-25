@@ -1,5 +1,13 @@
-name: Create pre-release
+name: Build
 on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '**.hs'
+      - 'stack.yaml'
+      - 'package.yaml'
+      - '**.cabal'
+
   push:
     branches:
       - main
@@ -10,6 +18,24 @@ on:
       - '**.cabal'
 
 jobs:
+  hlint:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v3
+      - uses: haskell/actions/hlint-setup@v1
+      - uses: haskell/actions/hlint-run@v2 
+
+  fourmolu:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v3
+      - uses: haskell-actions/run-fourmolu@v9
+        with:
+          # Only check the format of .hs in any directory inside cwd but not cwd.
+          pattern: |
+            */**/*.hs
 
   build-binaries:
     name: Build and test binaries (${{ matrix.os }})
@@ -90,6 +116,7 @@ jobs:
   pre-release:
     name: "Pre Release"
     needs: build-binaries
+    if: github.event_name != 'pull_request'
     permissions:
       contents: write
     runs-on: "ubuntu-latest"
@@ -108,11 +135,12 @@ jobs:
 
       # - name: Check zip files
       #   run: ls -R
+      - run: echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-8)" >> $GITHUB_ENV
 
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          name: Pre-release ${{ github.sha }}
+          name: Pre-release ${{ env.GITHUB_SHA_SHORT }}
           draft: true
           prerelease: true
           fail_on_unmatched_files: true
