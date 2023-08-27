@@ -1,4 +1,4 @@
-[![test-gh-actions](https://github.com/0rphee/schedule-maker/actions/workflows/test-gh-actions.yml/badge.svg?branch=gh-actions)](https://github.com/0rphee/schedule-maker/actions/workflows/test-gh-actions.yml)
+[![Build](https://github.com/0rphee/schedule-maker/actions/workflows/pre-release.yml/badge.svg)](https://github.com/0rphee/schedule-maker/actions/workflows/pre-release.yml)
 
 # schedule-maker
 A command-line utility to create your school schedules.

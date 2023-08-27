@@ -7,7 +7,6 @@ on:
       - 'stack.yaml'
       - 'package.yaml'
       - '**.cabal'
-
   push:
     branches:
       - main
@@ -16,7 +15,6 @@ on:
       - 'stack.yaml'
       - 'package.yaml'
       - '**.cabal'
-
 jobs:
   hlint:
     runs-on: ubuntu-latest
@@ -50,7 +48,6 @@ jobs:
           - os: windows-latest
             stack-build-args: -j2 --flag hexpat:bundle 
     steps:
-
       # SETUP
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -66,7 +63,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: .stack-work/
-          key: ${{ runner.os }}-store${{ hashFiles('stack.yaml.lock') }}-${{ hashFiles('schedule-maker.cabal') }}
+          key: ${{ runner.os }}-store-${{ hashFiles('stack.yaml.lock') }}-${{ hashFiles('schedule-maker.cabal') }}
 
       - name: Cache dependencies (Unix)
         uses: actions/cache@v3
@@ -126,33 +123,16 @@ jobs:
       - name: Check artifacts
         run: ls -R
 
-      # - name: Create zip files
-      #   run: |
-      #     for dir in */; do
-      #         dir_name=$(basename "$dir")
-      #         zip -r "$dir_name.zip" "$dir_name"
-      #     done
-
-      # - name: Check zip files
-      #   run: ls -R
-      - run: echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-8)" >> $GITHUB_ENV
+      - name: Create short commit sha
+        run: echo "GITHUB_SHA_SHORT=$(echo $GITHUB_SHA | cut -c 1-10)" >> $GITHUB_ENV
 
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
           name: Pre-release ${{ env.GITHUB_SHA_SHORT }}
-          draft: true
+          draft: false
           prerelease: true
+          tag_name: Pre-release ${{ env.GITHUB_SHA_SHORT }}
           fail_on_unmatched_files: true
           generate_release_notes: true
           files: 'schedule-maker-x86_64-**/schedule-maker-x86_64-*'
-
-      # - uses: "marvinpinto/action-automatic-releases@latest"
-      #   with:
-      #     repo_token: "${{ secrets.GITHUB_TOKEN }}"
-      #     automatic_release_tag: "latest"
-      #     prerelease: true
-      #     title: "Development Build"
-      #     files: |
-      #       LICENSE.txt
-      #       *.jar
