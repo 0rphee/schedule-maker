@@ -134,7 +134,7 @@ jobs:
           name: Pre-release ${{ env.GITHUB_SHA_SHORT }}
           draft: false
           prerelease: true
-          tag_name: Pre-release ${{ env.GITHUB_SHA_SHORT }}
+          tag_name: Pre-release-${{ env.GITHUB_SHA_SHORT }}
           fail_on_unmatched_files: true
           generate_release_notes: true
           files: 'schedule-maker-x86_64-**/schedule-maker-x86_64-*'
