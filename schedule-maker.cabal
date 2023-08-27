@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           schedule-maker
-version:        0.1.0.0
+version:        0.1.0
 description:    Please see the README on GitHub at <https://github.com/0rphee/schedule-maker#readme>
 homepage:       https://github.com/0rphee/schedule-maker#readme
 bug-reports:    https://github.com/0rphee/schedule-maker/issues
