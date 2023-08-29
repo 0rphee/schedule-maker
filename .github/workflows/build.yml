@@ -1,0 +1,26 @@
+name: Build (stack-action)
+on:
+  workflow_dispatch:
+jobs:
+  build-binaries:
+    name: Build and test binaries (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            stack-build-args: -j2                            
+          - os: macos-latest
+            stack-build-args: -j3                            
+          - os: windows-latest
+            stack-build-args: -j2 --flag hexpat:bundle 
+    steps:
+      # SETUP
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Build (${{ runner.os }})
+        uses: freckle/stack-action@v4
+        with: 
+          stack-arguments: --local-bin-path="$(pwd)/schedule-maker-x86_64-${{ runner.os }}" --copy-bins --ghc-options=-O2 ${{ matrix.stack-build-args }} 
+          pedantic: false
