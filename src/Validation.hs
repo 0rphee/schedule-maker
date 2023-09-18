@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE LambdaCase #-}
 
 module Validation (collectValidationResults, runProgLogic) where
@@ -5,7 +6,7 @@ module Validation (collectValidationResults, runProgLogic) where
 import CmdLineOpts
 import Control.Monad (when)
 import Data.Bifunctor (Bifunctor (first))
-import Data.List (tails)
+import Data.List (foldl', tails)
 import Data.Map.Strict qualified as M
 import Data.Text qualified as T
 import Data.Yaml
@@ -37,14 +38,14 @@ classesOverlap class1 class2 =
     (SaturdayClass inter1, SaturdayClass inter2) -> intervalsOverlap inter1 inter2
     _ -> False
 
-getMapsFromValues
-  :: [IDandSubj] -> Either Error (M.Map T.Text [T.Text], M.Map T.Text Subject)
+getMapsFromValues ::
+  [IDandSubj] -> Either Error (M.Map T.Text [T.Text], M.Map T.Text Subject)
 getMapsFromValues values = go values (Right (M.empty, M.empty))
   where
-    go
-      :: [IDandSubj]
-      -> Either Error (M.Map T.Text [T.Text], M.Map T.Text Subject)
-      -> Either Error (M.Map T.Text [T.Text], M.Map T.Text Subject)
+    go ::
+      [IDandSubj] ->
+      Either Error (M.Map T.Text [T.Text], M.Map T.Text Subject) ->
+      Either Error (M.Map T.Text [T.Text], M.Map T.Text Subject)
     go [] result = result
     go (IDandSubj (id', subj) : xs) res =
       do
@@ -58,10 +59,10 @@ getMapsFromValues values = go values (Right (M.empty, M.empty))
         alteringFunc (Just valueInside) = Just (id' : valueInside)
         alteringFunc Nothing = Just [id']
 
-genPossibleClassCombinations
-  :: Applicative f
-  => M.Map T.Text (f T.Text)
-  -> f [T.Text] -- outpts the list of lists of ids as Text
+genPossibleClassCombinations ::
+  (Applicative f) =>
+  M.Map T.Text (f T.Text) ->
+  f [T.Text] -- outpts the list of lists of ids as Text
 genPossibleClassCombinations = sequenceA . M.elems
 
 tuples :: Int -> [a] -> [[a]]
@@ -74,7 +75,7 @@ tuples =
    in go
 
 validate :: M.Map T.Text Subject -> [[T.Text]] -> ([Error], [[IDandSubj]]) -- (errors, and successes)
-validate allSubjectsMp = foldl foldingF ([], [])
+validate allSubjectsMp = foldl' foldingF ([], [])
   where
     validateSubj :: [T.Text] -> Maybe Error
     validateSubj combinations = validateClasses' asClasses -- combinations: ["1243", "1445", ..]
@@ -86,7 +87,7 @@ validate allSubjectsMp = foldl foldingF ([], [])
               combinations
 
         validateClasses' :: [(T.Text, Class)] -> Maybe Error
-        validateClasses' allClasses = foldl f Nothing pairCombinations
+        validateClasses' allClasses = foldl' f Nothing pairCombinations
           where
             pairCombinations = toTup <$> tuples 2 allClasses
             toTup xs = case xs of
@@ -112,12 +113,12 @@ validate allSubjectsMp = foldl foldingF ([], [])
 
 collectValidationResults :: [IDandSubj] -> Either [Error] [[IDandSubj]]
 collectValidationResults xs = do
-  (materias, db) <- first (: []) $ getMapsFromValues xs
+  (!materias, !db) <- first (: []) $ getMapsFromValues xs
   let allSubjectCombinations = genPossibleClassCombinations materias
   let validationResults = validate db allSubjectCombinations
   case validationResults of
-    (errorList, []) -> Left errorList
-    (_, successes) -> pure successes
+    (!errorList, []) -> Left errorList
+    (_, !successes) -> pure successes
 
 runProgLogic :: Options -> IO ()
 runProgLogic = \case
