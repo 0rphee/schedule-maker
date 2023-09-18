@@ -1,46 +1,53 @@
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 module Types
-  ( Class (..)
-  , Hour (..)
-  , Time (..)
-  , Interval (..)
-  , Subject (..)
-  , IDandSubj (..)
-  , Error (..)
+  ( Class (..),
+    Hour (..),
+    Time (..),
+    Interval (..),
+    Subject (..),
+    IDandSubj (..),
+    Error (..),
   )
 where
 
 import Control.Applicative ((<|>))
+import Control.DeepSeq
 import Data.Aeson.Types (parseFail, prependFailure, typeMismatch)
 import Data.Text qualified as T
 import Data.Yaml
-  ( FromJSON (parseJSON)
-  , Value (Object, String)
-  , (.:)
+  ( FromJSON (parseJSON),
+    Value (Object, String),
+    (.:),
   )
 import Prettyprinter (Pretty (pretty), indent, line, vsep, (<+>))
 
 data Class
   = MondayClass
-      { classInterval :: Interval
+      { classInterval :: !Interval
       }
   | TuesdayClass
-      { classInterval :: Interval
+      { classInterval :: !Interval
       }
   | WednesdayClass
-      { classInterval :: Interval
+      { classInterval :: !Interval
       }
   | ThursdayClass
-      { classInterval :: Interval
+      { classInterval :: !Interval
       }
   | FridayClass
-      { classInterval :: Interval
+      { classInterval :: !Interval
       }
   | SaturdayClass
-      { classInterval :: Interval
+      { classInterval :: !Interval
       }
   | SundayClass
-      { classInterval :: Interval
+      { classInterval :: !Interval
       }
+
+instance NFData Class where
+  rnf x = rnf (classInterval x)
 
 instance Show Class where
   show x =
@@ -81,6 +88,9 @@ data Hour
   | H23
   deriving (Eq, Ord, Bounded)
 
+instance NFData Hour where
+  rnf h = h `seq` ()
+
 instance Show Hour where
   show x =
     case x of
@@ -115,6 +125,9 @@ data Minute
   | HalfAnHour
   deriving (Eq, Ord, Bounded)
 
+instance NFData Minute where
+  rnf m = m `seq` ()
+
 instance Show Minute where
   show x =
     case x of
@@ -123,10 +136,13 @@ instance Show Minute where
   {-# INLINE show #-}
 
 data Time = MkTime
-  { timeHour :: Hour
-  , timeMinute :: Minute
+  { timeHour :: !Hour,
+    timeMinute :: !Minute
   }
   deriving (Eq, Ord, Bounded)
+
+instance NFData Time where
+  rnf (MkTime x y) = rnf x `seq` rnf y
 
 instance Show Time where
   show (MkTime hour minutes) = show hour <> ":" <> show minutes
@@ -235,9 +251,12 @@ instance Enum Time where
       MkTime H23 HalfAnHour -> 47
 
 data Interval = MkInterval
-  { intervalStartingTime :: Time
-  , intervalEndTime :: Time
+  { intervalStartingTime :: !Time,
+    intervalEndTime :: !Time
   }
+
+instance NFData Interval where
+  rnf (MkInterval f s) = rnf f `seq` rnf s
 
 instance Show Interval where
   show (MkInterval beginning end) = show beginning <> "-" <> show end
@@ -245,13 +264,17 @@ instance Show Interval where
 
 newtype IDandSubj
   = IDandSubj (T.Text, Subject)
+  deriving newtype (NFData)
 
 data Subject = MkSubject
-  { subjName :: T.Text
-  , subjProfessor :: T.Text
-  , subjclasses :: [Class]
-  -- maybe will change to S.Seq
+  { subjName :: !T.Text,
+    subjProfessor :: !T.Text,
+    subjclasses :: ![Class]
+    -- maybe will change to S.Seq
   }
+
+instance NFData Subject where
+  rnf (MkSubject n p c) = rnf n `seq` rnf p `seq` rnf c
 
 instance Show Subject where
   show (MkSubject sname sprof classes) =
@@ -265,9 +288,13 @@ instance Show Subject where
   {-# INLINEABLE show #-}
 
 data Error
-  = OverlappingClasses (Subject, Class) (Subject, Class)
-  | RepeatedSubjId T.Text Subject Subject
+  = OverlappingClasses !(Subject, Class) !(Subject, Class)
+  | RepeatedSubjId !T.Text !Subject !Subject
   deriving (Show)
+
+instance NFData Error where
+  rnf (OverlappingClasses l r) = rnf l `seq` rnf r
+  rnf (RepeatedSubjId x y z) = rnf x `seq` rnf y `seq` rnf z
 
 createInterval :: Time -> Time -> Maybe Interval
 createInterval x y =

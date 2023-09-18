@@ -48,6 +48,7 @@ executable schedule-maker
     , base >=4.7 && <5
     , bytestring
     , containers
+    , deepseq
     , lens
     , optparse-applicative
     , prettyprinter
@@ -85,10 +86,51 @@ test-suite schedule-maker-test
     , base >=4.7 && <5
     , bytestring
     , containers
+    , deepseq
     , lens
     , optparse-applicative
     , prettyprinter
     , prettyprinter-ansi-terminal
+    , terminal-size
+    , text
+    , time
+    , xlsx
+    , yaml
+  default-language: Haskell2010
+
+benchmark xolsh-benchmarks
+  type: exitcode-stdio-1.0
+  main-is: Bench.hs
+  other-modules:
+      CmdLineOpts
+      PPrint
+      Types
+      Validation
+      WriteXlsx
+      Paths_schedule_maker
+  hs-source-dirs:
+      src
+      bench
+  default-extensions:
+      OverloadedStrings
+      NamedFieldPuns
+      ScopedTypeVariables
+      PartialTypeSignatures
+      ImportQualifiedPost
+      TupleSections
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -O2 -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , containers
+    , deepseq
+    , lens
+    , optparse-applicative
+    , prettyprinter
+    , prettyprinter-ansi-terminal
+    , tasty
+    , tasty-bench
     , terminal-size
     , text
     , time

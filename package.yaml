@@ -33,6 +33,7 @@ dependencies:
 - lens
 - time
 - optparse-applicative
+- deepseq
 
 ghc-options:
 - -Wall
@@ -72,3 +73,17 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+
+benchmarks:
+  xolsh-benchmarks:
+    main:                Bench.hs
+    source-dirs:         
+    - bench
+    ghc-options:
+    - -O2
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - tasty
+    - tasty-bench
