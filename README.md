@@ -118,6 +118,8 @@ https://github.com/0rphee/schedule-maker
       final: 8:30
 ```
 
-## Preview of .xlsx output
+## Preview of .xlsx output 
+
+(This image only shows **one** of the generated *valid* schedules generated from `test-english.yaml`, found in the test `schedules.xlsx` found in the repo.)
 
 <img width="911" alt="img" src="https://github.com/0rphee/schedule-maker/assets/79347623/e97ff510-3167-459c-95fd-da8b40264357">
