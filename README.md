@@ -1,9 +1,11 @@
 [![Build](https://github.com/0rphee/schedule-maker/actions/workflows/pre-release.yml/badge.svg)](https://github.com/0rphee/schedule-maker/actions/workflows/pre-release.yml)
 
 # schedule-maker
-A command-line utility to create your school schedules.
+A command-line utility to create your school schedules. Validates every possible combination of your school schedule verifying that there aren't any overlapping classes.
 
 Creates an .xlsx file with your school schedules from a .yaml file with your classes.
+
+Binaries for windows, mac, and linux (built on ubuntu) can be found in the Github releases page.
 
 <!-- DO NOT REMOVE ANNOTATIONS, GITHUB ACTIONS DEPENDS ON THEM -->
 <!-- REPLACE_EXE_HELP -->
@@ -115,3 +117,7 @@ https://github.com/0rphee/schedule-maker
       inicio: 7:00
       final: 8:30
 ```
+
+## Preview of .xlsx output
+
+<img width="911" alt="img" src="https://github.com/0rphee/schedule-maker/assets/79347623/e97ff510-3167-459c-95fd-da8b40264357">
