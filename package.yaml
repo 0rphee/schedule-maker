@@ -45,6 +45,8 @@ ghc-options:
 - -Wmissing-home-modules
 - -Wpartial-fields
 - -Wredundant-constraints
+- -fwrite-ide-info
+- -hiedir=.hie
 
 default-extensions:
 - OverloadedStrings

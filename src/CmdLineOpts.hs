@@ -6,10 +6,10 @@ import Options.Applicative
 
 data Options
   = NormalOptions
-      FilePath --  yamlSource
-      Bool -- prettyPrintToStdout
-      FilePath -- outputFilePath
-  | PrintExampleYaml ExampleYamlLanguage -- True english, False spanish
+      !FilePath --  yamlSource
+      !Bool -- prettyPrintToStdout
+      !FilePath -- outputFilePath
+  | PrintExampleYaml !ExampleYamlLanguage -- True english, False spanish
 
 data ExampleYamlLanguage
   = English
