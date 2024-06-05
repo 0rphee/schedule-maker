@@ -3,10 +3,28 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    commit: b31ccf7c1f68532f5c6beb0e50128290fa5d03f3
+    git: git@github.com:0rphee/iCalendar.git
+    name: iCalendar
+    pantry-tree:
+      sha256: 3c93da66cbb54febeadf033a3153f08ffb90b951b67e7b513a2ba052bc7646a1
+      size: 1026
+    version: 0.4.0.5
+  original:
+    commit: b31ccf7c1f68532f5c6beb0e50128290fa5d03f3
+    git: git@github.com:0rphee/iCalendar.git
+- completed:
+    hackage: mime-0.4.0.2@sha256:208947d9d1a19d08850be67ecb28c6e776db697f3bba05bd9d682e51a59f241f,983
+    pantry-tree:
+      sha256: f2529a2e1678074ca0340ff60caa986f4e246d7d9abe8186657910c2900364bb
+      size: 565
+  original:
+    hackage: mime-0.4.0.2@sha256:208947d9d1a19d08850be67ecb28c6e776db697f3bba05bd9d682e51a59f241f,983
 snapshots:
 - completed:
-    sha256: a4e61f552492f4f0a14246c054144a8b6b455c67c9e99fddf891d009baa65604
-    size: 667656
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2023/9/9.yaml
-  original: nightly-2023-09-09
+    sha256: 73ad581de7c5306278aec7706cafaf3b1c2eb7abf4ab586e4d9dc675c6106c4e
+    size: 718708
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/22/23.yaml
+  original: lts-22.23

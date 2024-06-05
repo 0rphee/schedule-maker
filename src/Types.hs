@@ -1,14 +1,18 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Types
   ( Class (..),
     Hour (..),
+    Minute (..),
     Time (..),
     Interval (..),
     Subject (..),
     IDandSubj (..),
     Error (..),
+    minuteToInt,
+    getClassDayOffset,
   )
 where
 
@@ -86,7 +90,7 @@ data Hour
   | H21
   | H22
   | H23
-  deriving (Eq, Ord, Bounded)
+  deriving (Eq, Ord, Enum, Bounded)
 
 instance NFData Hour where
   rnf h = h `seq` ()
@@ -488,3 +492,18 @@ instance Pretty Error where
       <> pretty subjId
       <> line
       <> indent 2 (vsep [pretty subj1, pretty subj2])
+
+minuteToInt :: Minute -> Int
+minuteToInt = \case
+  ZeroMinutes -> 0
+  HalfAnHour -> 30
+
+getClassDayOffset :: Class -> Integer
+getClassDayOffset = \case
+  MondayClass _ -> 0
+  TuesdayClass _ -> 1
+  WednesdayClass _ -> 2
+  ThursdayClass _ -> 3
+  FridayClass _ -> 4
+  SaturdayClass _ -> 5
+  SundayClass _ -> 6

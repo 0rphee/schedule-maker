@@ -17,6 +17,7 @@ import System.Console.Terminal.Size
 import System.IO (stdout)
 import Types
 import WriteXlsx (saveExcel)
+import WriteiCal (saveICal)
 
 intervalsOverlap :: Interval -> Interval -> Bool
 intervalsOverlap (MkInterval a b) (MkInterval x y)
@@ -123,7 +124,7 @@ collectValidationResults xs = do
 runProgLogic :: Options -> IO ()
 runProgLogic = \case
   PrintExampleYaml lang -> printYaml lang
-  NormalOptions yamlSource prettyPrintToStdout outputFilePath -> do
+  NormalOptions yamlSource prettyPrintToStdout outputFilePath mayICalFilePath -> do
     res <- decodeFileEither yamlSource -- "test-english.yaml"
     sz <-
       size >>= \case
@@ -139,4 +140,6 @@ runProgLogic = \case
         Left errs -> prettyRender (annotateErrors errs) -- validation errors
         Right lists -> do
           when prettyPrintToStdout $ prettyRender (annotateSubjectLists lists)
+
+          maybe (pure ()) (saveICal lists) mayICalFilePath
           saveExcel lists outputFilePath

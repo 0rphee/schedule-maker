@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.2.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -30,6 +30,7 @@ executable schedule-maker
       PPrint
       Types
       Validation
+      WriteiCal
       WriteXlsx
       Paths_schedule_maker
   hs-source-dirs:
@@ -48,7 +49,9 @@ executable schedule-maker
     , base >=4.7 && <5
     , bytestring
     , containers
+    , data-default
     , deepseq
+    , iCalendar
     , lens
     , optparse-applicative
     , prettyprinter
@@ -68,6 +71,7 @@ test-suite schedule-maker-test
       PPrint
       Types
       Validation
+      WriteiCal
       WriteXlsx
       Paths_schedule_maker
   hs-source-dirs:
@@ -86,7 +90,9 @@ test-suite schedule-maker-test
     , base >=4.7 && <5
     , bytestring
     , containers
+    , data-default
     , deepseq
+    , iCalendar
     , lens
     , optparse-applicative
     , prettyprinter
@@ -106,6 +112,7 @@ benchmark xolsh-benchmarks
       PPrint
       Types
       Validation
+      WriteiCal
       WriteXlsx
       Paths_schedule_maker
   hs-source-dirs:
@@ -124,7 +131,9 @@ benchmark xolsh-benchmarks
     , base >=4.7 && <5
     , bytestring
     , containers
+    , data-default
     , deepseq
+    , iCalendar
     , lens
     , optparse-applicative
     , prettyprinter

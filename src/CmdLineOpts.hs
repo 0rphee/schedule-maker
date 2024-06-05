@@ -1,6 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 
-module CmdLineOpts (options, Options (..), execParser, ExampleYamlLanguage (..)) where
+module CmdLineOpts (options, Options (..), execParser, ExampleYamlLanguage (..),) where
 
 import Options.Applicative
 
@@ -9,6 +9,7 @@ data Options
       !FilePath --  yamlSource
       !Bool -- prettyPrintToStdout
       !FilePath -- outputFilePath
+      !(Maybe FilePath) -- create *.ical schedule
   | PrintExampleYaml !ExampleYamlLanguage -- True english, False spanish
 
 data ExampleYamlLanguage
@@ -32,7 +33,7 @@ options =
     opts = languageParser <|> normalOpts
 
 normalOpts :: Parser Options
-normalOpts = NormalOptions <$> yamlPath <*> prettyPrintStdout <*> outputPath
+normalOpts = NormalOptions <$> yamlPath <*> prettyPrintStdout <*> outputPath <*> icalPath
 
 languageParser :: Parser Options
 languageParser =
@@ -79,3 +80,23 @@ outputPath =
         <> long "output"
         <> short 'o'
     )
+
+icalPath :: Parser (Maybe FilePath)
+icalPath = optional first <|> second
+  where first = 
+          strOption
+            ( metavar "FILENAME"
+                <> help "Write output to FILE (.ical)"
+                <> action "directory"
+                <> action "file"
+                <> long "ical"
+                <> short 'i'
+            )
+        second = 
+          flag Nothing (Just "schedules.ical")
+            (
+                help "Write output to FILE (.ical)"
+                <> long "ical"
+                <> short 'i'
+              
+            )

@@ -34,6 +34,8 @@ dependencies:
 - time
 - optparse-applicative
 - deepseq
+- iCalendar
+- data-default
 
 ghc-options:
 - -Wall
