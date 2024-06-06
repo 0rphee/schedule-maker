@@ -1,10 +1,11 @@
 {-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module WriteiCal (saveICal) where
+module WriteiCal (saveMultipleICals) where
 
 import Data.ByteString.Lazy.Char8 qualified as BSL
 import Data.Default
+import Data.Foldable (traverse_)
 import Data.Function ((&))
 import Data.Map.Strict as M
 import Data.Text qualified as TS
@@ -54,49 +55,65 @@ emptyVEvent =
       veOther = def
     }
 
-toVCal :: Day -> [IDandSubj] -> VCalendar
-toVCal weekStartDay subjects =
-  emptyVCalendar
-    { vcEvents = vEventMap
-    }
+toVCal :: Day -> [IDandSubj] -> IO VCalendar
+toVCal weekStartDay subjects = do
+  emap <- vEventMap
+  pure $
+    emptyVCalendar
+      { vcEvents = emap
+      }
   where
-    vEventMap :: Map (TL.Text, Maybe (Either Date DateTime)) VEvent
-    vEventMap = ((\(txt, ev) -> ((txt, Nothing), ev)) <$> vEventList) & M.fromList
+    vEventMap :: IO (Map (TL.Text, Maybe (Either Date DateTime)) VEvent)
+    vEventMap = do
+      elist <- vEventList
+      pure $ ((\(txt, ev) -> ((txt, Nothing), ev)) <$> elist) & M.fromList
 
-    vEventList :: [(TL.Text, VEvent)]
-    vEventList = concatMap idandsubjToVEvents subjects
+    vEventList :: IO [(TL.Text, VEvent)]
+    vEventList = concat <$> traverse idandsubjToVEvents subjects
 
-    idandsubjToVEvents :: IDandSubj -> [(TL.Text, VEvent)]
-    idandsubjToVEvents (IDandSubj (subId, subj)) = fmap (classToEvent subId subj.subjName subj.subjProfessor) subj.subjclasses
+    idandsubjToVEvents :: IDandSubj -> IO [(TL.Text, VEvent)]
+    idandsubjToVEvents (IDandSubj (subId, subj)) = traverse (classToEvent subId subj.subjName subj.subjProfessor) subj.subjclasses
 
-    classToEvent :: TS.Text -> TS.Text -> TS.Text -> Class -> (TL.Text, VEvent) -- T.Text: UID value
-    classToEvent subId name teacher individualClass =
-      ( uidText,
-        emptyVEvent
-          { veSummary =
-              Just $
-                Summary
-                  { summaryValue = TL.fromStrict (name <> "(" <> subId <> ")"),
-                    summaryLanguage = def,
-                    summaryAltRep = def,
-                    summaryOther = def
-                  },
-            veUID = UID uidText def,
-            veDTStart = Just startDatetime,
-            veDTEndDuration = Just $ Left endDatetime,
-            veDescription =
-              Just $
-                Description
-                  { descriptionValue = TL.fromStrict teacher,
-                    descriptionLanguage = def,
-                    descriptionAltRep = def,
-                    descriptionOther = def
-                  }
-          }
-      )
+    classToEvent :: TS.Text -> TS.Text -> TS.Text -> Class -> IO (TL.Text, VEvent) -- T.Text: UID value
+    classToEvent subId name teacher individualClass = do
+      uidText <- getUidText
+      pure $
+        ( uidText,
+          emptyVEvent
+            { veSummary =
+                Just $
+                  Summary
+                    { summaryValue = TL.fromStrict (name <> "(" <> subId <> ")"),
+                      summaryLanguage = def,
+                      summaryAltRep = def,
+                      summaryOther = def
+                    },
+              veUID = UID uidText def,
+              veDTStart = Just startDatetime,
+              veDTEndDuration = Just $ Left endDatetime,
+              veDescription =
+                Just $
+                  Description
+                    { descriptionValue = TL.fromStrict teacher,
+                      descriptionLanguage = def,
+                      descriptionAltRep = def,
+                      descriptionOther = def
+                    }
+            }
+        )
       where
-        uidText :: TL.Text
-        uidText = TL.fromStrict subId <> TL.pack (show $ getClassDayOffset individualClass)
+        getUidText :: IO TL.Text
+        getUidText = do
+          time <- TL.pack . show <$> getSystemTime
+          let res =
+                TL.fromStrict subId
+                  <> "-"
+                  <> TL.replace " " "_" (TL.fromStrict name)
+                  <> "-"
+                  <> TL.pack (show $ getClassDayOffset individualClass)
+                  <> "-"
+                  <> time
+          pure res
 
         dayOfClass :: Day
         dayOfClass = addDays (getClassDayOffset individualClass) weekStartDay
@@ -136,11 +153,19 @@ renderICal :: [IDandSubj] -> IO BSL.ByteString
 renderICal idAndSubj = do
   (LocalTime today _) <- getLocalTime
   let nextMonday = addDays 1 $ sundayAfter today
-  let vcal = toVCal nextMonday idAndSubj
+  vcal <- toVCal nextMonday idAndSubj
   pure $ printICalendar def vcal
-
 
 saveICal :: [IDandSubj] -> FilePath -> IO ()
 saveICal idAndSubj filepath = do
   renderedICal <- renderICal idAndSubj
   BSL.writeFile filepath renderedICal
+
+saveMultipleICals :: [[IDandSubj]] -> IO ()
+saveMultipleICals schedules = traverse_ (uncurry saveICal) schedulesWithNames
+  where
+    joinLists :: [IDandSubj] -> Int -> ([IDandSubj], FilePath)
+    joinLists singleSchedule scheduleNumber = (singleSchedule, "schedule" <> show scheduleNumber <> ".ics")
+
+    schedulesWithNames :: [([IDandSubj], FilePath)]
+    schedulesWithNames = zipWith joinLists schedules [1 ..]

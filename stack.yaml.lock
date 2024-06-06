@@ -6,7 +6,7 @@
 packages:
 - completed:
     commit: b31ccf7c1f68532f5c6beb0e50128290fa5d03f3
-    git: git@github.com:0rphee/iCalendar.git
+    git: https://github.com/0rphee/iCalendar.git
     name: iCalendar
     pantry-tree:
       sha256: 3c93da66cbb54febeadf033a3153f08ffb90b951b67e7b513a2ba052bc7646a1
@@ -14,7 +14,7 @@ packages:
     version: 0.4.0.5
   original:
     commit: b31ccf7c1f68532f5c6beb0e50128290fa5d03f3
-    git: git@github.com:0rphee/iCalendar.git
+    git: https://github.com/0rphee/iCalendar.git
 - completed:
     hackage: mime-0.4.0.2@sha256:208947d9d1a19d08850be67ecb28c6e776db697f3bba05bd9d682e51a59f241f,983
     pantry-tree:
