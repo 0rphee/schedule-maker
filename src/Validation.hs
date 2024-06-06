@@ -39,14 +39,14 @@ classesOverlap class1 class2 =
     (SaturdayClass inter1, SaturdayClass inter2) -> intervalsOverlap inter1 inter2
     _ -> False
 
-getMapsFromValues ::
-  [IDandSubj] -> Either Error (M.Map T.Text [T.Text], M.Map T.Text Subject)
+getMapsFromValues
+  :: [IDandSubj] -> Either Error (M.Map T.Text [T.Text], M.Map T.Text Subject)
 getMapsFromValues values = go values (Right (M.empty, M.empty))
   where
-    go ::
-      [IDandSubj] ->
-      Either Error (M.Map T.Text [T.Text], M.Map T.Text Subject) ->
-      Either Error (M.Map T.Text [T.Text], M.Map T.Text Subject)
+    go
+      :: [IDandSubj]
+      -> Either Error (M.Map T.Text [T.Text], M.Map T.Text Subject)
+      -> Either Error (M.Map T.Text [T.Text], M.Map T.Text Subject)
     go [] result = result
     go (IDandSubj (id', subj) : xs) res =
       do
@@ -60,10 +60,10 @@ getMapsFromValues values = go values (Right (M.empty, M.empty))
         alteringFunc (Just valueInside) = Just (id' : valueInside)
         alteringFunc Nothing = Just [id']
 
-genPossibleClassCombinations ::
-  (Applicative f) =>
-  M.Map T.Text (f T.Text) ->
-  f [T.Text] -- outpts the list of lists of ids as Text
+genPossibleClassCombinations
+  :: Applicative f
+  => M.Map T.Text (f T.Text)
+  -> f [T.Text] -- outpts the list of lists of ids as Text
 genPossibleClassCombinations = sequenceA . M.elems
 
 tuples :: Int -> [a] -> [[a]]

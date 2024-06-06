@@ -3,16 +3,16 @@
 {-# LANGUAGE LambdaCase #-}
 
 module Types
-  ( Class (..),
-    Hour (..),
-    Minute (..),
-    Time (..),
-    Interval (..),
-    Subject (..),
-    IDandSubj (..),
-    Error (..),
-    minuteToInt,
-    getClassDayOffset,
+  ( Class (..)
+  , Hour (..)
+  , Minute (..)
+  , Time (..)
+  , Interval (..)
+  , Subject (..)
+  , IDandSubj (..)
+  , Error (..)
+  , minuteToInt
+  , getClassDayOffset
   )
 where
 
@@ -21,9 +21,9 @@ import Control.DeepSeq
 import Data.Aeson.Types (parseFail, prependFailure, typeMismatch)
 import Data.Text qualified as T
 import Data.Yaml
-  ( FromJSON (parseJSON),
-    Value (Object, String),
-    (.:),
+  ( FromJSON (parseJSON)
+  , Value (Object, String)
+  , (.:)
   )
 import Prettyprinter (Pretty (pretty), indent, line, vsep, (<+>))
 
@@ -140,8 +140,8 @@ instance Show Minute where
   {-# INLINE show #-}
 
 data Time = MkTime
-  { timeHour :: !Hour,
-    timeMinute :: !Minute
+  { timeHour :: !Hour
+  , timeMinute :: !Minute
   }
   deriving (Eq, Ord, Bounded)
 
@@ -255,8 +255,8 @@ instance Enum Time where
       MkTime H23 HalfAnHour -> 47
 
 data Interval = MkInterval
-  { intervalStartingTime :: !Time,
-    intervalEndTime :: !Time
+  { intervalStartingTime :: !Time
+  , intervalEndTime :: !Time
   }
 
 instance NFData Interval where
@@ -271,10 +271,10 @@ newtype IDandSubj
   deriving newtype (NFData)
 
 data Subject = MkSubject
-  { subjName :: !T.Text,
-    subjProfessor :: !T.Text,
-    subjclasses :: ![Class]
-    -- maybe will change to S.Seq
+  { subjName :: !T.Text
+  , subjProfessor :: !T.Text
+  , subjclasses :: ![Class]
+  -- maybe will change to S.Seq
   }
 
 instance NFData Subject where

@@ -57,8 +57,8 @@ separateWith lineStyle lineChar numOfLines l r = l <> emptyLines <> separatingLi
 annotateErrors :: [Error] -> Doc AnsiStyle
 annotateErrors es =
   annotate
-    (color Red <> bold) $
-    concatWith (separateWith bold '-' 1) (map annotateError es) <> line
+    (color Red <> bold)
+    $ concatWith (separateWith bold '-' 1) (map annotateError es) <> line
 
 annotateSubjectList :: [IDandSubj] -> Doc AnsiStyle
 annotateSubjectList ss = concatWith (separateWith (colorDull Yellow) '-' 1) (map annotateSubject ss)

@@ -11,8 +11,9 @@ import Data.Map.Strict as M
 import Data.Text qualified as TS
 import Data.Text.Lazy qualified as TL
 import Data.Time
+import Data.Time.Clock.System
+    ( systemToUTCTime, getSystemTime, systemToUTCTime )
 import Data.Time.Calendar.Easter (sundayAfter)
-import Data.Time.Clock.System (getSystemTime, systemToUTCTime)
 import Text.ICalendar hiding (Class)
 import Types
 
@@ -22,37 +23,37 @@ emptyVCalendar = def
 emptyVEvent :: VEvent
 emptyVEvent =
   VEvent
-    { veDTStamp = DTStamp (UTCTime (ModifiedJulianDay 1) (secondsToDiffTime 1)) def, -- date & time of creation
-      veUID = UID "" def,
-      veClass = def,
-      veDTStart = def,
-      veCreated = def,
-      veDescription = def,
-      veGeo = def,
-      veLastMod = def,
-      veLocation = def,
-      veOrganizer = def,
-      vePriority = def,
-      veSeq = def,
-      veStatus = def,
-      veSummary = def,
-      veTransp = def,
-      veUrl = def,
-      veRecurId = def,
-      veRRule = def,
-      veDTEndDuration = def,
-      veAttach = def,
-      veAttendee = def,
-      veCategories = def,
-      veComment = def,
-      veContact = def,
-      veExDate = def,
-      veRStatus = def,
-      veRelated = def,
-      veResources = def,
-      veRDate = def,
-      veAlarms = def,
-      veOther = def
+    { veDTStamp = DTStamp (UTCTime (ModifiedJulianDay 1) (secondsToDiffTime 1)) def -- date & time of creation
+    , veUID = UID "" def
+    , veClass = def
+    , veDTStart = def
+    , veCreated = def
+    , veDescription = def
+    , veGeo = def
+    , veLastMod = def
+    , veLocation = def
+    , veOrganizer = def
+    , vePriority = def
+    , veSeq = def
+    , veStatus = def
+    , veSummary = def
+    , veTransp = def
+    , veUrl = def
+    , veRecurId = def
+    , veRRule = def
+    , veDTEndDuration = def
+    , veAttach = def
+    , veAttendee = def
+    , veCategories = def
+    , veComment = def
+    , veContact = def
+    , veExDate = def
+    , veRStatus = def
+    , veRelated = def
+    , veResources = def
+    , veRDate = def
+    , veAlarms = def
+    , veOther = def
     }
 
 toVCal :: Day -> [IDandSubj] -> IO VCalendar
@@ -72,39 +73,40 @@ toVCal weekStartDay subjects = do
     vEventList = concat <$> traverse idandsubjToVEvents subjects
 
     idandsubjToVEvents :: IDandSubj -> IO [(TL.Text, VEvent)]
-    idandsubjToVEvents (IDandSubj (subId, subj)) = traverse (classToEvent subId subj.subjName subj.subjProfessor) subj.subjclasses
+    idandsubjToVEvents (IDandSubj (subId, subj)) =
+      traverse (classToEvent subId subj.subjName subj.subjProfessor) subj.subjclasses
 
     classToEvent :: TS.Text -> TS.Text -> TS.Text -> Class -> IO (TL.Text, VEvent) -- T.Text: UID value
     classToEvent subId name teacher individualClass = do
       uidText <- getUidText
-      pure $
-        ( uidText,
-          emptyVEvent
+      pure
+        ( uidText
+        , emptyVEvent
             { veSummary =
                 Just $
                   Summary
-                    { summaryValue = TL.fromStrict (name <> "(" <> subId <> ")"),
-                      summaryLanguage = def,
-                      summaryAltRep = def,
-                      summaryOther = def
-                    },
-              veUID = UID uidText def,
-              veDTStart = Just startDatetime,
-              veDTEndDuration = Just $ Left endDatetime,
-              veDescription =
+                    { summaryValue = TL.fromStrict (name <> "(" <> subId <> ")")
+                    , summaryLanguage = def
+                    , summaryAltRep = def
+                    , summaryOther = def
+                    }
+            , veUID = UID uidText def
+            , veDTStart = Just startDatetime
+            , veDTEndDuration = Just $ Left endDatetime
+            , veDescription =
                 Just $
                   Description
-                    { descriptionValue = TL.fromStrict teacher,
-                      descriptionLanguage = def,
-                      descriptionAltRep = def,
-                      descriptionOther = def
+                    { descriptionValue = TL.fromStrict teacher
+                    , descriptionLanguage = def
+                    , descriptionAltRep = def
+                    , descriptionOther = def
                     }
             }
         )
       where
         getUidText :: IO TL.Text
         getUidText = do
-          time <- TL.pack . show <$> getSystemTime
+          time <- TL.pack . formatTime defaultTimeLocale "%C:%y:%m:%dT:%H:%M:%S:%qZ" . systemToUTCTime <$> getSystemTime
           let res =
                 TL.fromStrict subId
                   <> "-"
@@ -121,25 +123,26 @@ toVCal weekStartDay subjects = do
         startDatetime :: DTStart
         startDatetime =
           DTStartDateTime
-            { dtStartDateTimeValue = buildDateTime individualClass.classInterval.intervalStartingTime,
-              dtStartOther = def
+            { dtStartDateTimeValue =
+                buildDateTime individualClass.classInterval.intervalStartingTime
+            , dtStartOther = def
             }
         endDatetime :: DTEnd
         endDatetime =
           DTEndDateTime
-            { dtEndDateTimeValue = buildDateTime individualClass.classInterval.intervalEndTime,
-              dtEndOther = def
+            { dtEndDateTimeValue = buildDateTime individualClass.classInterval.intervalEndTime
+            , dtEndOther = def
             }
         buildDateTime :: Time -> DateTime
         buildDateTime time =
           FloatingDateTime $
             LocalTime
-              { localDay = dayOfClass,
-                localTimeOfDay =
+              { localDay = dayOfClass
+              , localTimeOfDay =
                   TimeOfDay
-                    { todHour = fromEnum time.timeHour,
-                      todMin = minuteToInt time.timeMinute,
-                      todSec = 0
+                    { todHour = fromEnum time.timeHour
+                    , todMin = minuteToInt time.timeMinute
+                    , todSec = 0
                     }
               }
 
