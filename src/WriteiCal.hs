@@ -11,9 +11,12 @@ import Data.Map.Strict as M
 import Data.Text qualified as TS
 import Data.Text.Lazy qualified as TL
 import Data.Time
-import Data.Time.Clock.System
-    ( systemToUTCTime, getSystemTime, systemToUTCTime )
 import Data.Time.Calendar.Easter (sundayAfter)
+import Data.Time.Clock.System
+  ( getSystemTime
+  , systemToUTCTime
+  )
+import Prettyprinter (pretty)
 import Text.ICalendar hiding (Class)
 import Types
 
@@ -104,9 +107,19 @@ toVCal weekStartDay subjects = do
             }
         )
       where
+        classIntervalToText :: Class -> TL.Text
+        classIntervalToText c = start <> "-" <> end
+          where
+            start = TL.pack $ show $ pretty c.classInterval.intervalStartingTime
+            end = TL.pack $ show $ pretty c.classInterval.intervalEndTime
+
         getUidText :: IO TL.Text
         getUidText = do
-          time <- TL.pack . formatTime defaultTimeLocale "%C:%y:%m:%dT:%H:%M:%S:%qZ" . systemToUTCTime <$> getSystemTime
+          time <-
+            TL.pack
+              . formatTime defaultTimeLocale "%C:%y:%m:%dT:%H:%M:%S:%qZ"
+              . systemToUTCTime
+              <$> getSystemTime
           let res =
                 TL.fromStrict subId
                   <> "-"
@@ -115,6 +128,7 @@ toVCal weekStartDay subjects = do
                   <> TL.pack (show $ getClassDayOffset individualClass)
                   <> "-"
                   <> time
+                  <> classIntervalToText individualClass
           pure res
 
         dayOfClass :: Day
