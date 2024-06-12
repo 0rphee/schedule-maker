@@ -1,6 +1,7 @@
 [![Build](https://github.com/0rphee/schedule-maker/actions/workflows/pre-release.yml/badge.svg)](https://github.com/0rphee/schedule-maker/actions/workflows/pre-release.yml)
 
 # schedule-maker
+
 A command-line utility to create your school schedules. Validates every possible combination of your school schedule verifying that there aren't any overlapping classes.
 
 Creates an .xlsx file with your school schedules from a .yaml file with your classes.
@@ -9,11 +10,12 @@ Binaries for windows, mac, and linux (built on ubuntu) can be found in the Githu
 
 <!-- DO NOT REMOVE ANNOTATIONS, GITHUB ACTIONS DEPENDS ON THEM -->
 <!-- REPLACE_EXE_HELP -->
+
 ```
 schedule-maker - a command-line utility to create your school schedules.
 
-Usage: schedule-maker (--print-yaml-example LANGUAGE | FILENAME 
-                        [-p|--pretty-print] [-o|--output FILENAME])
+Usage: schedule-maker (--print-yaml-example LANGUAGE | FILENAME
+                        [-p|--pretty-print] [-o|--output FILENAME] [-i|--ical])
 
   Create an .xlsx file with your school schedules from a .yaml file with your
   classes.
@@ -25,11 +27,27 @@ Available options:
   -p,--pretty-print        Print to stdout the validated schedules
   -o,--output FILENAME     Write output to FILE (.xlsx)
                            (default: "schedules.xlsx")
+  -i,--ical                Write the schedules to iCal files (schedule1.ics,
+                           schedule2.ics)
   -h,--help                Show this help text
 
 still a work in progress, source code here:
 https://github.com/0rphee/schedule-maker
 ```
+
+(Examples of valid yaml to use this tool below.)
+
+## Preview of .xlsx output
+
+(This image only shows **one** of the generated _valid_ schedules generated from `test-english.yaml`, found in the test `schedules.xlsx` found in the repo.)
+
+<img width="911" alt="img" src="https://github.com/0rphee/schedule-maker/assets/79347623/e97ff510-3167-459c-95fd-da8b40264357">
+
+## Preview of .ics output
+
+(This image only shows **one** of the generated _valid_ schedules generated from `test-english.yaml`, the program will one `schedule*.ics` per valid schedule, this files can be imported by calendar apps, like Google Calendar.)
+
+<img width="1440" alt="ics-test" src="https://github.com/0rphee/schedule-maker/assets/79347623/b34c3487-9a62-4af6-b7de-341dd96018ec">
 
 ## English yaml
 
@@ -117,9 +135,3 @@ https://github.com/0rphee/schedule-maker
       inicio: 7:00
       final: 8:30
 ```
-
-## Preview of .xlsx output 
-
-(This image only shows **one** of the generated *valid* schedules generated from `test-english.yaml`, found in the test `schedules.xlsx` found in the repo.)
-
-<img width="911" alt="img" src="https://github.com/0rphee/schedule-maker/assets/79347623/e97ff510-3167-459c-95fd-da8b40264357">
