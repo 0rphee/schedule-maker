@@ -81,7 +81,7 @@ tests:
 benchmarks:
   xolsh-benchmarks:
     main:                Bench.hs
-    source-dirs:         
+    source-dirs:
     - bench
     ghc-options:
     - -O2

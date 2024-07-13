@@ -9,11 +9,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            stack-build-args: -j2                            
+            stack-build-args: -j2
           - os: macos-latest
-            stack-build-args: -j3                            
+            stack-build-args: -j3
           - os: windows-latest
-            stack-build-args: -j2 --flag hexpat:bundle 
+            stack-build-args: -j2 --flag hexpat:bundle
     steps:
       # SETUP
       - name: Checkout repo
@@ -21,6 +21,6 @@ jobs:
 
       - name: Build (${{ runner.os }})
         uses: freckle/stack-action@v4
-        with: 
-          stack-arguments: --local-bin-path="$(pwd)/schedule-maker-x86_64-${{ runner.os }}" --copy-bins --ghc-options=-O2 ${{ matrix.stack-build-args }} 
+        with:
+          stack-arguments: --local-bin-path="$(pwd)/schedule-maker-x86_64-${{ runner.os }}" --copy-bins --ghc-options=-O2 ${{ matrix.stack-build-args }}
           pedantic: false

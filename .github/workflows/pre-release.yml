@@ -24,7 +24,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: haskell/actions/hlint-setup@v1
-      - uses: haskell/actions/hlint-run@v2 
+      - uses: haskell/actions/hlint-run@v2
 
   fourmolu:
     runs-on: ubuntu-latest
@@ -44,11 +44,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            stack-build-args: -j2                            
+            stack-build-args: -j2
           - os: macos-latest
-            stack-build-args: -j3                            
+            stack-build-args: -j3
           - os: windows-latest
-            stack-build-args: -j2 --flag hexpat:bundle 
+            stack-build-args: -j2 --flag hexpat:bundle
     steps:
       # SETUP
       - name: Checkout repo
@@ -91,7 +91,7 @@ jobs:
       # BUILD
       - name: Build (${{ runner.os }})
         shell: bash
-        run: stack build --local-bin-path="$(pwd)/schedule-maker-x86_64-${{ runner.os }}" --copy-bins --ghc-options=-O2 ${{ matrix.stack-build-args }} 
+        run: stack build --local-bin-path="$(pwd)/schedule-maker-x86_64-${{ runner.os }}" --copy-bins --ghc-options=-O2 ${{ matrix.stack-build-args }}
 
       # UPLOAD BINARIES
       - name: Compress dirs (Unix)
@@ -111,7 +111,7 @@ jobs:
           name: schedule-maker-x86_64-${{ runner.os }}
           path: schedule-maker-x86_64-${{ runner.os }}.zip
           if-no-files-found: error
- 
+
   pre-release:
     name: "Pre Release"
     needs: build-binaries
