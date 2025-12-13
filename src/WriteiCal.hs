@@ -178,11 +178,11 @@ saveICal idAndSubj filepath = do
   renderedICal <- renderICal idAndSubj
   BSL.writeFile filepath renderedICal
 
-saveMultipleICals :: [[IDandSubj]] -> IO ()
-saveMultipleICals schedules = traverse_ (uncurry saveICal) schedulesWithNames
+saveMultipleICals :: [[IDandSubj]] -> String -> IO ()
+saveMultipleICals schedules filePrefix= traverse_ (uncurry saveICal) schedulesWithNames
   where
     joinLists :: [IDandSubj] -> Int -> ([IDandSubj], FilePath)
-    joinLists singleSchedule scheduleNumber = (singleSchedule, "schedule" <> show scheduleNumber <> ".ics")
+    joinLists singleSchedule scheduleNumber = (singleSchedule, filePrefix <> show scheduleNumber <> ".ics")
 
     schedulesWithNames :: [([IDandSubj], FilePath)]
     schedulesWithNames = zipWith joinLists schedules [1 ..]

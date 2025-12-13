@@ -1,11 +1,13 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 
 module Validation (collectValidationResults, runProgLogic) where
 
 import CmdLineOpts
 import Control.Monad (when)
 import Data.Bifunctor (Bifunctor (first))
+import Data.Foldable (forM_)
 import Data.List (foldl', tails)
 import Data.Map.Strict qualified as M
 import Data.Text qualified as T
@@ -136,11 +138,12 @@ runProgLogic = \case
 
     case res of
       Left err -> putStrLn $ prettyPrintParseException err -- yaml parsing errors
-      Right result -> case collectValidationResults result of
-        Left errs -> prettyRender (annotateErrors errs) -- validation errors
-        Right lists -> do
-          when prettyPrintToStdout $ prettyRender (annotateSubjectLists lists)
-
-          when writeICals $ saveMultipleICals lists
-
-          saveExcel lists outputFilePath
+      Right result -> do
+        when writeICals $ forM_ result $ \idandsubj@(IDandSubj (i, s)) ->
+          saveMultipleICals [[idandsubj]] (T.unpack $ s.subjName <> "(" <> i <> ")")
+        case collectValidationResults result of
+          Left errs -> prettyRender (annotateErrors errs) -- validation errors
+          Right lists -> do
+            when prettyPrintToStdout $ prettyRender (annotateSubjectLists lists)
+            when writeICals $ saveMultipleICals lists "schedule"
+            saveExcel lists outputFilePath
