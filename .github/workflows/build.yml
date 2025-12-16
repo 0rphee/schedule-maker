@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Build (${{ runner.os }})
-        uses: freckle/stack-action@v4
+        uses: freckle/stack-action@v5
         with:
           stack-arguments: --local-bin-path="$(pwd)/schedule-maker-x86_64-${{ runner.os }}" --copy-bins --ghc-options=-O2 ${{ matrix.stack-build-args }}
           pedantic: false
