@@ -53,27 +53,27 @@ jobs:
 
       # CACHING
       - name: Cache .stack-work
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: .stack-work/
           key: ${{ runner.os }}-store${{ hashFiles('stack.yaml.lock') }}-${{ hashFiles('schedule-maker.cabal') }}
 
       - name: Cache dependencies (Unix)
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         if: matrix.os != 'windows-latest'
         with:
           path: ~/.stack
           key: ${{ runner.os }}-store-${{ hashFiles('stack.yaml.lock') }}-${{ hashFiles('schedule-maker.cabal') }}
 
       - name: Cache dependencies (Windows)
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         if: matrix.os == 'windows-latest'
         with:
           path: C:\sr # 'C:\Users\runneradmin\AppData\Roaming\stack'
           key: ${{ runner.os }}-store-${{ hashFiles('stack.yaml.lock') }}-${{ hashFiles('schedule-maker.cabal') }}
 
       - name: Cache GHC (Windows)
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         if: matrix.os == 'windows-latest'
         with:
           path: 'C:\Users\runneradmin\AppData\Local\Programs\stack'
